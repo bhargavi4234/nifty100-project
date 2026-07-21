@@ -1,0 +1,13 @@
+table_name,rows_loaded,status,load_time
+companies,92,SUCCESS,2026-07-21 10:13:14
+sectors,92,SUCCESS,2026-07-21 10:13:14
+peer_groups,56,SUCCESS,2026-07-21 10:13:14
+analysis,16,SUCCESS,2026-07-21 10:13:14
+prosandcons,14,SUCCESS,2026-07-21 10:13:14
+documents,1457,SUCCESS,2026-07-21 10:13:14
+profitandloss,1177,SUCCESS,2026-07-21 10:13:14
+balancesheet,1227,SUCCESS,2026-07-21 10:13:14
+cashflow,1091,SUCCESS,2026-07-21 10:13:14
+financial_ratios,1160,SUCCESS,2026-07-21 10:13:15
+market_cap,552,SUCCESS,2026-07-21 10:13:15
+stock_prices,5520,SUCCESS,2026-07-21 10:13:15
