@@ -1,9 +1,5 @@
-import os
-import sys
 
-sys.path.append(os.path.abspath("src/etl"))
-
-from normaliser import (
+from src.etl.normaliser import (
     normalize_year,
     normalize_ticker,
     clean_text,
