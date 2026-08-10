@@ -1,15 +1,11 @@
 # NIFTY100 Financial Intelligence Platform
 
-## Sprint 1 & Sprint 2 – Data Foundation and Financial Analytics
+## Sprint 1, Sprint 2 & Sprint 3 – Data Foundation, Financial Analytics and Peer Analysis
 
 ### Project Overview
 
 The **NIFTY100 Financial Intelligence Platform** is designed to build a reliable financial analytics platform for NIFTY100 companies. The project extracts financial data from multiple Excel source files, validates it using Data Quality (DQ) rules, stores the validated data in a SQLite database, and generates advanced financial ratios for analytics and company screening.
 
-The project is divided into two sprints:
-
-- **Sprint 1** established the ETL pipeline, database, and data validation framework.
-- **Sprint 2** implemented financial ratio calculations, CAGR analysis, company screening, and financial analytics.
 
 ---
 
@@ -589,6 +585,216 @@ The project is now ready for future sprints involving advanced analytics, APIs, 
 
 ---
 
+
+## Sprint 3 — Screener + Peer Engine
+
+### Sprint Objective
+
+Sprint 3 focused on developing the financial screener, composite quality scoring, peer percentile rankings, radar charts, and peer comparison reports for the Nifty 100 Financial Analytics Project.
+
+### Day 15 — Screener Engine
+
+- Implemented `src/screener/engine.py`.
+- Developed the financial screening and filtering engine.
+- Added filters for ROE, Debt-to-Equity, Free Cash Flow, Revenue CAGR, PAT CAGR, EPS CAGR, Operating Profit Margin, Interest Coverage, Asset Turnover, Market Capitalisation, P/E, P/B, Dividend Yield, Sales, and Net Profit.
+- Implemented a composite quality score from 0–100.
+- Added profitability, cash quality, growth, and leverage components to the composite score.
+- Added sector-relative score normalisation.
+
+### Day 16 — Screener Presets
+
+Implemented six predefined screening presets:
+
+- Quality Compounder
+- Value Pick
+- Growth Accelerator
+- Dividend Champion
+- Debt-Free Blue Chip
+- Turnaround Watch
+
+The preset threshold definitions are maintained in the analyst-editable configuration file:
+
+`config/screener_config.yaml`
+
+### Day 17 — Screener Excel Report
+
+Generated:
+
+`output/screener_output.xlsx`
+
+The workbook contains six sheets, one for each screener preset.
+
+The report includes financial metrics, composite quality scores, and colour-coded screening results.
+
+All six presets were verified to return between 5 and 50 companies.
+
+### Day 18 — Peer Percentile Rankings
+
+Implemented:
+
+`src/analytics/peer.py`
+
+Peer percentile rankings were calculated for 10 financial metrics across 11 peer groups.
+
+Metrics used:
+
+- ROE
+- ROCE
+- Net Profit Margin
+- Debt-to-Equity
+- Free Cash Flow
+- PAT CAGR 5yr
+- Revenue CAGR 5yr
+- EPS CAGR 5yr
+- Interest Coverage
+- Asset Turnover
+
+For Debt-to-Equity, the percentile ranking is inverted so that lower Debt-to-Equity receives a higher percentile rank.
+
+The results were stored in the SQLite table:
+
+`peer_percentiles`
+
+A total of 7,300 peer percentile rows were created.
+
+Companies without a peer group are handled using `No peer group assigned`.
+
+### Day 19 — Peer Radar Charts
+
+Implemented:
+
+`src/analytics/radar.py`
+
+Radar charts were generated for peer analysis using Python and Matplotlib.
+
+The radar charts contain:
+
+- ROE
+- ROCE
+- NPM
+- D/E
+- FCF Score
+- PAT CAGR 5yr
+- Revenue CAGR 5yr
+- Composite Score
+
+Peer-group averages are included as a reference overlay.
+
+The generated PNG files are stored in:
+
+`reports/radar_charts/`
+
+### Day 20 — Peer Comparison Excel Report
+
+Implemented:
+
+`src/analytics/peer_report.py`
+
+Generated:
+
+`output/peer_comparison.xlsx`
+
+The workbook contains exactly 11 peer-group sheets:
+
+- Automobiles
+- Consumer Finance
+- FMCG
+- IT Services
+- Life Insurance
+- Oil & Gas
+- Pharmaceuticals
+- Power & Utilities
+- Private Banks
+- Public Sector Banks
+- Steel
+
+The report contains company information, financial metrics, percentile rankings, benchmark highlighting, and peer median values.
+
+Percentile ranking cells are colour-coded as:
+
+- Green — >= 75th percentile
+- Yellow — 25th to 75th percentile
+- Red — <= 25th percentile
+
+Benchmark company rows are highlighted with a gold/amber background.
+
+### Day 21 — Tests and Sprint Review
+
+- Ran the complete automated test suite.
+- Final result: **93 tests passed with 0 failures**.
+- Manually verified the Quality Compounder preset.
+- Verified that the six presets return between 5 and 50 companies.
+- Verified IT Services peer ROE percentile ranking.
+- Verified FMCG peer ROE percentile ranking.
+- Prepared the Sprint 3 retrospective.
+- Prepared the screener and peer comparison reports for team-lead demonstration.
+
+### Sprint 3 Deliverables
+
+- `output/screener_output.xlsx`
+- `output/peer_comparison.xlsx`
+- `reports/radar_charts/`
+- `peer_percentiles` SQLite table
+- `config/screener_config.yaml`
+- `src/screener/engine.py`
+- `src/analytics/peer.py`
+- `src/analytics/radar.py`
+- `src/analytics/peer_report.py`
+
+
+### Sprint 3 Terminal Commands
+
+```powershell
+python -m src.screener.presets
+```
+
+```powershell
+python -m src.analytics.peer
+```
+
+```powershell
+python -m src.analytics.radar
+```
+
+```powershell
+python -m src.analytics.peer_report
+```
+
+```powershell
+python -m pytest -q
+```
+
+
+### Sprint 3 Retrospective
+
+#### What Went Well
+- Successfully implemented the financial screener engine.
+- Created six screening presets.
+- Implemented composite quality scoring.
+- Implemented peer percentile rankings for 11 peer groups.
+- Generated radar charts and Excel reports.
+- Completed automated testing with 93 passed tests and 0 failures.
+
+#### Challenges
+- Some companies did not have an assigned peer group.
+- SQL joins required database schema verification.
+- Initial peer report generation caused high memory usage.
+
+#### Improvements
+- Corrected SQL joins based on the actual database schema.
+- Optimised peer report generation to reduce memory usage.
+- Handled companies without peer groups safely.
+
+#### Learning Outcomes
+- Learned practical financial screening and peer analysis.
+- Improved skills in SQLite, Pandas, Excel reporting, and data visualisation.
+- Gained experience with automated testing and debugging.
+- Learned how to optimise data processing for large datasets.
+
+#### Sprint 3 Status
+**Completed**
+
+
 ## Author
 
 **Bhargavi**
@@ -598,3 +804,5 @@ NIFTY100 Financial Intelligence Platform
 Sprint 1 – Data Foundation & ETL
 
 Sprint 2 – Financial Ratio Engine
+
+Sprint 3 - implemented the financial screener, peer analysis, radar charts, and peer comparison reports.

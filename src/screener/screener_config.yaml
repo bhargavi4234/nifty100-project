@@ -1,0 +1,16 @@
+filters:
+  roe_min: 10
+  debt_equity_max:
+  fcf_min:
+  revenue_cagr_5yr_min:
+  pat_cagr_5yr_min:
+  opm_min:
+  pe_max:
+  pb_max:
+  dividend_yield_min:
+  icr_min:
+  market_cap_min:
+  net_profit_min:
+  eps_cagr_min:
+  asset_turnover_min:
+  sales_min:
