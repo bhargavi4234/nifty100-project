@@ -40,50 +40,58 @@ By the end of Sprint 2, the project successfully:
 
 # Project Structure
 
-```text
 nifty100_project/
 │
+├── config/
+│   └── screener_config.yaml
+│
 ├── data/
-│   ├── raw/
-│   ├── processed/
 │   └── db/
 │       └── nifty100.db
 │
-├── db/
-│   └── schema.sql
-│
-├── notebooks/
-│   └── exploratory_queries.sql
-│
 ├── output/
-│   ├── load_audit.csv
-│   ├── validation_failures.csv
-│   ├── ratio_edge_cases.log
-│   └── retrospective.md
+│   ├── screener_output.xlsx
+│   └── peer_comparison.xlsx
+│
+├── reports/
+│   ├── radar_charts/
+│   │   ├── ABB_radar.png
+│   │   ├── ADANIENSOL_radar.png
+│   │   ├── ADANIENT_radar.png
+│   │   └── ... radar charts
+│   │
+│   └── Sprint_3_Retrospective.docx
 │
 ├── src/
-│   ├── etl/
-│   │   ├── loader.py
-│   │   ├── validator.py
-│   │   ├── normaliser.py
-│   │   ├── manual_review.py
-│   │   └── fk_check.py
+│   ├── analytics/
+│   │   ├── cagr.py
+│   │   ├── cashflow.py
+│   │   ├── ratios.py
+│   │   ├── peer.py
+│   │   ├── peer_report.py
+│   │   └── radar.py
 │   │
-│   └── analytics/
-│       ├── ratios.py
-│       ├── cagr.py
-│       ├── populate_financial_ratios.py
-│       └── __init__.py
+│   ├── etl/
+│   │   └── ...
+│   │
+│   └── screener/
+│       ├── __init__.py
+│       ├── engine.py
+│       ├── presets.py
+│       └── screener_config.yaml
 │
 ├── tests/
-│   ├── etl/
-│   └── analytics/
+│   ├── analytics/
+│   │   ├── test_cagr.py
+│   │   ├── test_cashflow.py
+│   │   └── test_ratios.py
+│   │
+│   └── etl/
+│       └── test_normaliser.py
 │
-├── README.md
-├── requirements.txt
-├── Makefile
-└── .env
-```
+├── README.MD
+├── .gitignore
+└── requirements.txt
 
 ---
 
