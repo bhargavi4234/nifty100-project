@@ -1,0 +1,32 @@
+SPRINT 3 RETROSPECTIVE
+
+What went well:
+• Financial screener engine was successfully implemented.
+• Six screener presets were created and tested.
+• Composite quality score was implemented.
+• Peer percentile rankings were successfully generated for 11 peer groups.
+• Radar charts were generated for peer analysis.
+• screener_output.xlsx and peer_comparison.xlsx were successfully created.
+• All automated tests passed successfully with 93 passed and 0 failures.
+
+What could be improved:
+• Duplicate company-year records were identified in the dataset.
+• Some companies did not have an assigned peer group.
+• Some SQL joins required database schema corrections.
+• Excel report generation initially caused high memory usage.
+
+What was learned:
+• Learned how to implement financial screening and composite scoring.
+• Learned how to calculate peer percentile rankings.
+• Learned how to generate radar charts and Excel reports using Python.
+• Improved understanding of SQLite, pandas, SQL joins, and automated testing.
+• Learned how to debug and optimize data-processing code.
+
+Action items for the next sprint:
+• Improve data quality and handle duplicate records.
+• Improve performance of large data-processing operations.
+• Add more validation and automated tests.
+• Improve visualization and reporting features.
+
+Sprint status:
+COMPLETED
