@@ -1,6 +1,6 @@
 # NIFTY100 Financial Intelligence Platform
 
-## Sprint 1, Sprint 2 & Sprint 3 – Data Foundation, Financial Analytics and Peer Analysis
+## Sprint 1, Sprint 2, Sprint 3 & Sprint 4 – Data Foundation, Financial Analytics, Peer Analysis, Streamlit Dashboard & Valuation
 
 ### Project Overview
 
