@@ -46,30 +46,57 @@ nifty100_project/
 │   └── screener_config.yaml
 │
 ├── data/
+│   ├── raw/
+│   │   └── market_cap.xlsx
 │   └── db/
 │       └── nifty100.db
 │
 ├── output/
+│   ├── capital_allocation.csv
+│   ├── load_audit.csv
+│   ├── peer_comparison.xlsx
+│   ├── ratio_edge_cases.log
+│   ├── retrospective.md
 │   ├── screener_output.xlsx
-│   └── peer_comparison.xlsx
+│   ├── validation_failures.csv
+│   ├── valuation_summary.xlsx
+│   └── valuation_flags.csv
 │
 ├── reports/
 │   ├── radar_charts/
 │   │   ├── ABB_radar.png
 │   │   ├── ADANIENSOL_radar.png
 │   │   ├── ADANIENT_radar.png
-│   │   └── ... radar charts
-│   │
+│   │   └── ...
 │   └── Sprint_3_Retrospective.docx
 │
 ├── src/
 │   ├── analytics/
+│   │   ├── __init__.py
 │   │   ├── cagr.py
 │   │   ├── cashflow.py
-│   │   ├── ratios.py
+│   │   ├── generate_capital_allocation.py
 │   │   ├── peer.py
 │   │   ├── peer_report.py
-│   │   └── radar.py
+│   │   ├── populate_financial_ratios.py
+│   │   ├── radar.py
+│   │   ├── ratios.py
+│   │   └── valuation.py
+│   │
+│   ├── dashboard/
+│   │   ├── app.py
+│   │   ├── pages/
+│   │   │   ├── 01_home.py
+│   │   │   ├── 02_profile.py
+│   │   │   ├── 03_screener.py
+│   │   │   ├── 04_peers.py
+│   │   │   ├── 05_trends.py
+│   │   │   ├── 06_sectors.py
+│   │   │   ├── 07_capital.py
+│   │   │   └── 08_reports.py
+│   │   └── utils/
+│   │       ├── __init__.py
+│   │       └── db.py
 │   │
 │   ├── etl/
 │   │   └── ...
@@ -77,22 +104,26 @@ nifty100_project/
 │   └── screener/
 │       ├── __init__.py
 │       ├── engine.py
-│       ├── presets.py
-│       └── screener_config.yaml
+│       └── presets.py
 │
 ├── tests/
 │   ├── analytics/
 │   │   ├── test_cagr.py
 │   │   ├── test_cashflow.py
 │   │   └── test_ratios.py
-│   │
 │   └── etl/
 │       └── test_normaliser.py
 │
+├── db/
+│   └── schema.sql
+│
+├── notebooks/
+│   └── exploratory_queries.sql
+│
 ├── README.MD
-├── .gitignore
-└── requirements.txt
-
+├── Makefile
+├── requirements.txt
+└── .gitignore
 ---
 
 # Technologies Used
@@ -802,6 +833,373 @@ python -m pytest -q
 #### Sprint 3 Status
 **Completed**
 
+
+# Sprint 4 — Streamlit Dashboard, Valuation & QA
+
+## Sprint Objective
+
+Sprint 4 focused on building an interactive Streamlit dashboard for NIFTY100 financial analysis, implementing valuation analytics, and completing integration testing and documentation.
+
+## Day 22 — Streamlit Dashboard Foundation
+
+Completed:
+
+- Created the Streamlit dashboard entry point.
+- Created 8 dashboard screens.
+- Added sidebar navigation.
+- Connected the dashboard to the SQLite database.
+- Added reusable database functions.
+- Configured the dashboard with a wide layout.
+
+Dashboard entry point:
+
+```text
+src/dashboard/app.py
+```
+
+Dashboard pages:
+
+```text
+src/dashboard/pages/
+├── 01_home.py
+├── 02_profile.py
+├── 03_screener.py
+├── 04_peers.py
+├── 05_trends.py
+├── 06_sectors.py
+├── 07_capital.py
+└── 08_reports.py
+```
+
+## Day 23 — Home & Company Profile
+
+### Home Screen
+
+Implemented:
+
+- Average ROE
+- Median P/E
+- Median D/E
+- Total companies
+- Median Revenue CAGR
+- Debt-free companies count
+- Sector breakdown
+- Year selector
+- Top quality companies
+
+### Company Profile Screen
+
+Implemented:
+
+- Company search by name or ticker
+- Company information
+- Sector
+- Sub-sector
+- NSE ticker
+- Company description
+- ROE
+- ROCE
+- Net Profit Margin
+- Debt-to-Equity
+- Revenue CAGR 5yr
+- FCF
+- Revenue and Net Profit 10-year trend
+- ROE and ROCE 10-year trend
+- Pros and Cons
+- Partial historical data handling
+- N/A display for unavailable metrics
+
+## Day 24 — Screener & Peer Comparison
+
+### Screener
+
+Implemented 10 interactive filters:
+
+- ROE minimum
+- D/E maximum
+- FCF minimum
+- Revenue CAGR minimum
+- PAT CAGR minimum
+- OPM minimum
+- P/E maximum
+- P/B maximum
+- Dividend Yield minimum
+- ICR minimum
+
+Implemented six presets:
+
+- Quality
+- Value
+- Growth
+- Dividend
+- Debt-Free
+- Turnaround
+
+Additional features:
+
+- Live filtering
+- Result count
+- Composite quality score
+- Financial metrics table
+- CSV download
+
+### Peer Comparison
+
+Implemented:
+
+- Peer group selection
+- Company selection
+- Company vs peer-group radar chart
+- KPI comparison
+- Peer average comparison
+- Benchmark highlighting
+
+## Day 25 — Trend, Sector, Capital Allocation & Reports
+
+### Trend Analysis
+
+Implemented:
+
+- Company search
+- Up to 3 metric selection
+- 10-year trend chart
+- Year-over-year percentage change
+- Data-point annotations
+
+### Sector Analysis
+
+Implemented:
+
+- Sector dropdown
+- Revenue vs ROE bubble chart
+- Market Cap bubble size
+- Sub-sector classification
+- Sector median KPI chart
+- Company table
+
+### Capital Allocation
+
+Implemented:
+
+- Capital allocation treemap
+- Company grouping by capital allocation pattern
+- Pattern selection
+- Company list by selected pattern
+
+Source:
+
+```text
+output/capital_allocation.csv
+```
+
+### Annual Reports
+
+Implemented:
+
+- Company search
+- Company selection
+- Available annual report years
+- BSE annual report links
+- Report unavailable status
+
+## Day 26 — Valuation Module
+
+Implemented:
+
+```text
+src/analytics/valuation.py
+```
+
+Input:
+
+```text
+data/raw/market_cap.xlsx
+```
+
+Calculated:
+
+- FCF Yield
+- Sector median P/E
+- P/E vs sector median
+- Valuation flags
+
+Valuation rules:
+
+```text
+P/E > Sector Median × 1.5 → Caution
+P/E < Sector Median × 0.7 → Discount
+Otherwise → Fair
+```
+
+Generated:
+
+```text
+output/valuation_summary.xlsx
+output/valuation_flags.csv
+```
+
+Valuation results for 92 companies:
+
+```text
+Fair        48
+Discount    30
+Caution     14
+```
+
+## Day 27 — Integration QA & Bug Fixes
+
+Completed integration testing of all 8 Streamlit screens.
+
+Tested companies across:
+
+- Information Technology
+- Financials
+- Consumer Staples / FMCG
+- Energy
+- Healthcare
+
+### Partial Data Testing
+
+Tested companies with fewer than 10 years of data:
+
+```text
+JIOFIN       2 years
+LICI         6 years
+ADANIGREEN   8 years
+HAL          8 years
+IRFC         9 years
+LODHA        9 years
+```
+
+JIOFIN was tested successfully with the message:
+
+```text
+Data available for 2 years. Some historical financial data may be unavailable.
+```
+
+Unavailable financial metrics are displayed as:
+
+```text
+N/A
+```
+
+### Screener QA
+
+Tested:
+
+- Minimum slider values
+- Maximum slider values
+- Zero-result scenarios
+- All six screener presets
+
+No application crash was observed.
+
+### Chart QA
+
+Checked dashboard charts for:
+
+- Page-width overflow
+- Clipped content
+- Incorrect year-axis behaviour
+- Responsive rendering
+
+The ROE and ROCE year axis was corrected to display categorical year labels.
+
+### Performance QA
+
+Company Profile loading was tested with multiple companies.
+
+The loading time remained below the required 3-second limit.
+
+## Day 28 — Retro & Documentation
+
+### Dashboard Run Instructions
+
+Run the dashboard using:
+
+```bash
+streamlit run src/dashboard/app.py
+```
+
+### Dashboard Screens
+
+### 1. Home
+
+NIFTY100 overview with key financial KPIs, sector breakdown, year selection, and company analysis.
+
+### 2. Company Profile
+
+Company search, company information, financial KPIs, financial trends, and pros and cons.
+
+### 3. Stock Screener
+
+10 financial filters, 6 screening presets, live results, and CSV download.
+
+### 4. Peer Comparison
+
+Peer group selection, radar chart, company vs peer average, and KPI comparison.
+
+### 5. Trend Analysis
+
+Company search, up to 3 financial metrics, 10-year trends, and YoY analysis.
+
+### 6. Sector Analysis
+
+Sector selection, Revenue vs ROE bubble chart, sector median KPIs, and company table.
+
+### 7. Capital Allocation
+
+Treemap showing companies grouped by capital allocation patterns.
+
+### 8. Annual Reports
+
+Company search, available report years, BSE annual report links, and report availability status.
+
+## Sprint 4 Retrospective
+
+### UX Decisions
+
+- Added company search using company name or NSE ticker.
+- Added interactive financial filters and preset strategies.
+- Used responsive Plotly charts.
+- Displayed N/A for unavailable financial metrics.
+- Added data availability messages for companies with limited history.
+- Added Report unavailable status for inaccessible annual reports.
+
+### Data Edge Cases
+
+- Some companies have fewer than 10 years of historical data.
+- Some financial metrics are unavailable.
+- Some annual report links are unavailable.
+- Some historical financial values contain extreme values.
+- Missing data is handled without crashing.
+
+### Performance Findings
+
+- Company Profile loading time was below the required 3-second limit.
+- Dashboard charts were checked for page-width overflow.
+- Extreme screener filter values were tested successfully.
+
+## Sprint 4 Deliverables
+
+- src/dashboard/app.py
+- src/dashboard/pages/01_home.py
+- src/dashboard/pages/02_profile.py
+- src/dashboard/pages/03_screener.py
+- src/dashboard/pages/04_peers.py
+- src/dashboard/pages/05_trends.py
+- src/dashboard/pages/06_sectors.py
+- src/dashboard/pages/07_capital.py
+- src/dashboard/pages/08_reports.py
+- src/dashboard/utils/db.py
+- src/analytics/valuation.py
+- output/valuation_summary.xlsx
+- output/valuation_flags.csv
+- output/capital_allocation.csv
+
+## Sprint 4 Status
+
+**Completed**
 
 ## Author
 
