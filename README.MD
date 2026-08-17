@@ -1,6 +1,6 @@
 # NIFTY100 Financial Intelligence Platform
 
-## Sprint 1, Sprint 2, Sprint 3 & Sprint 4 – Data Foundation, Financial Analytics, Peer Analysis, Streamlit Dashboard & Valuation
+## ## Sprint 1, Sprint 2, Sprint 3, Sprint 4 & Sprint 5 – Data Foundation, Financial Analytics, Peer Analysis, Streamlit Dashboard, Valuation, NLP & Automated Reporting
 
 ### Project Overview
 
@@ -42,88 +42,63 @@ By the end of Sprint 2, the project successfully:
 
 nifty100_project/
 │
-├── config/
-│   └── screener_config.yaml
-│
 ├── data/
 │   ├── raw/
-│   │   └── market_cap.xlsx
+│   ├── processed/
 │   └── db/
 │       └── nifty100.db
 │
-├── output/
-│   ├── capital_allocation.csv
-│   ├── load_audit.csv
-│   ├── peer_comparison.xlsx
-│   ├── ratio_edge_cases.log
-│   ├── retrospective.md
-│   ├── screener_output.xlsx
-│   ├── validation_failures.csv
-│   ├── valuation_summary.xlsx
-│   └── valuation_flags.csv
-│
-├── reports/
-│   ├── radar_charts/
-│   │   ├── ABB_radar.png
-│   │   ├── ADANIENSOL_radar.png
-│   │   ├── ADANIENT_radar.png
-│   │   └── ...
-│   └── Sprint_3_Retrospective.docx
+├── notebooks/
 │
 ├── src/
 │   ├── analytics/
-│   │   ├── __init__.py
-│   │   ├── cagr.py
-│   │   ├── cashflow.py
-│   │   ├── generate_capital_allocation.py
-│   │   ├── peer.py
-│   │   ├── peer_report.py
-│   │   ├── populate_financial_ratios.py
-│   │   ├── radar.py
-│   │   ├── ratios.py
-│   │   └── valuation.py
-│   │
-│   ├── dashboard/
-│   │   ├── app.py
-│   │   ├── pages/
-│   │   │   ├── 01_home.py
-│   │   │   ├── 02_profile.py
-│   │   │   ├── 03_screener.py
-│   │   │   ├── 04_peers.py
-│   │   │   ├── 05_trends.py
-│   │   │   ├── 06_sectors.py
-│   │   │   ├── 07_capital.py
-│   │   │   └── 08_reports.py
-│   │   └── utils/
-│   │       ├── __init__.py
-│   │       └── db.py
+│   │   ├── cashflow_kpis.py
+│   │   └── capital_allocation_report.py
 │   │
 │   ├── etl/
-│   │   └── ...
+│   │
+│   ├── nlp/
+│   │   ├── parser.py
+│   │   └── pros_cons_generator.py
+│   │
+│   ├── reports/
+│   │   ├── tearsheet.py
+│   │   ├── batch_reports.py
+│   │   └── portfolio_summary.py
 │   │
 │   └── screener/
-│       ├── __init__.py
-│       ├── engine.py
-│       └── presets.py
+│
+├── output/
+│   ├── analysis_parsed.csv
+│   ├── parse_failures.csv
+│   ├── pros_cons_generated.csv
+│   ├── cashflow_intelligence.xlsx
+│   ├── distress_alerts.csv
+│   ├── capital_allocation.csv
+│   ├── capital_allocation_distribution.csv
+│   ├── capital_allocation_verification.csv
+│   ├── pattern_changes.csv
+│   ├── skipped_tearsheets.csv
+│   └── sector_report_summary.csv
+│
+├── reports/
+│   ├── tearsheets/
+│   │   └── *_tearsheet.pdf
+│   │
+│   ├── sector/
+│   │   └── *_report.pdf
+│   │
+│   ├── portfolio/
+│   │   └── portfolio_summary.pdf
+│   │
+│   └── Sprint5_Retrospective.md
 │
 ├── tests/
-│   ├── analytics/
-│   │   ├── test_cagr.py
-│   │   ├── test_cashflow.py
-│   │   └── test_ratios.py
-│   └── etl/
-│       └── test_normaliser.py
 │
-├── db/
-│   └── schema.sql
-│
-├── notebooks/
-│   └── exploratory_queries.sql
-│
-├── README.MD
-├── Makefile
+├── README.md
 ├── requirements.txt
 └── .gitignore
+
 ---
 
 # Technologies Used
@@ -1200,6 +1175,149 @@ Company search, available report years, BSE annual report links, and report avai
 ## Sprint 4 Status
 
 **Completed**
+
+
+## Sprint 5 — NLP, Cash Flow Intelligence, Capital Allocation & Reporting
+
+### Day 29 — NLP Analysis Text Parser
+- Created `src/nlp/parser.py`
+- Parsed financial analysis text using regex.
+- Extracted:
+  - Compounded Sales Growth
+  - Compounded Profit Growth
+  - Stock Price CAGR
+  - ROE
+- Generated `output/analysis_parsed.csv`
+- Generated `output/parse_failures.csv`
+- Cross-validated parsed CAGR values against the Ratio Engine.
+- Flagged divergence greater than 5% for manual review.
+
+### Day 30 — NLP Auto Pros/Cons Generator
+- Created `src/nlp/pros_cons_generator.py`
+- Implemented 12 Pro rules and 12 Con rules.
+- Added confidence scoring for generated signals.
+- Generated `output/pros_cons_generated.csv`
+- Tested against the 92-company universe.
+- Documented unavailable `CON_11` because EBITDA and cash-balance data are not available in the current database.
+
+### Day 31 — Cash Flow Intelligence
+- Created `src/analytics/cashflow_kpis.py`
+- Implemented CFO Quality Score.
+- Implemented CapEx Intensity analysis.
+- Added Distress Signal detection.
+- Added Deleveraging detection.
+- Generated `output/cashflow_intelligence.xlsx`
+- Generated `output/distress_alerts.csv`
+- Processed all 92 companies.
+
+### Day 32 — Capital Allocation Report
+- Created `src/analytics/capital_allocation_report.py`
+- Verified Capital Allocation data against the current 92-company database.
+- Generated latest-year pattern distribution.
+- Added capital allocation information to `cashflow_intelligence.xlsx`
+- Generated `output/pattern_changes.csv`
+- Generated `output/capital_allocation_distribution.csv`
+- Generated `output/capital_allocation_verification.csv`
+- Documented ATGL's missing cash-flow data.
+
+### Day 33 — PDF Tearsheet Template
+- Created `src/reports/tearsheet.py`
+- Implemented a 2-page company tearsheet using ReportLab.
+- Added:
+  - Company header
+  - 6 KPI tiles
+  - Revenue and Net Profit charts
+  - ROE and ROCE trend chart
+  - Balance Sheet composition
+  - Cash Flow waterfall
+  - Pros and Cons
+  - Capital Allocation badge
+- Tested with:
+  - TCS
+  - HDFCBANK
+  - RELIANCE
+  - SUNPHARMA
+  - TATASTEEL
+- All 5 test tearsheets passed.
+
+### Day 34 — Batch Report Generation
+- Created batch tearsheet generation for the 92-company universe.
+- Generated 91 company tearsheets.
+- JIOFIN was skipped because it had fewer than 3 years of data.
+- Generated sector reports for all 10 actual sectors in the database.
+- Generated `output/skipped_tearsheets.csv`
+- Generated `output/sector_report_summary.csv`
+- Visually checked 5 batch-generated tearsheets.
+- No major overflow, blank-page, or chart-rendering issues were found.
+
+### Day 35 — Portfolio Summary PDF & Sprint Review
+- Created `src/reports/portfolio_summary.py`
+- Generated `reports/portfolio/portfolio_summary.pdf`
+- Generated 92 pages — one page for each company.
+- Companies are arranged alphabetically by ticker.
+- Each page contains:
+  - Company name
+  - Sector
+  - Top 6 KPIs
+  - Latest and previous values
+  - Trend arrows
+- Trend indicators:
+  - ↑ Improved
+  - ↓ Declined
+  - → Flat within 2%
+- Verified the PDF contains exactly 92 pages.
+- Created `reports/Sprint5_Retrospective.md`
+- Prepared Sprint 5 demo materials.
+
+### Sprint 5 Deliverables
+
+- `src/nlp/parser.py`
+- `src/nlp/pros_cons_generator.py`
+- `src/analytics/cashflow_kpis.py`
+- `src/analytics/capital_allocation_report.py`
+- `src/reports/tearsheet.py`
+- `src/reports/batch_reports.py`
+- `src/reports/portfolio_summary.py`
+- `output/analysis_parsed.csv`
+- `output/parse_failures.csv`
+- `output/pros_cons_generated.csv`
+- `output/cashflow_intelligence.xlsx`
+- `output/distress_alerts.csv`
+- `output/capital_allocation_distribution.csv`
+- `output/capital_allocation_verification.csv`
+- `output/pattern_changes.csv`
+- `output/skipped_tearsheets.csv`
+- `output/sector_report_summary.csv`
+- `reports/tearsheets/`
+- `reports/sector/`
+- `reports/portfolio/portfolio_summary.pdf`
+- `reports/Sprint5_Retrospective.md`
+
+### Sprint 5 Retrospective
+
+**Completed:**  
+Sprint 5 successfully added NLP parsing, automated Pros/Cons generation, Cash Flow Intelligence, Capital Allocation analysis, company tearsheets, batch reporting, sector reporting, and portfolio-level reporting.
+
+**Challenges:**  
+Some companies have incomplete financial data. ATGL has no current cash-flow/financial-ratio data, JIOFIN has fewer than 3 years of data, and CON_11 could not be evaluated because EBITDA and cash-balance data are unavailable. The database contains 10 actual sectors rather than the 11 mentioned in the task specification.
+
+**Future Improvements:**  
+Add missing financial data, improve handling of incomplete company histories, add EBITDA and cash-balance data, improve PDF validation, and expand portfolio-level analytics.
+
+### Sprint 5 Status
+
+** COMPLETE — Days 29–35**
+
+### Sprint 5 Data / Specification Notes
+
+- **LICI:** No Con signal was generated because none of the 12 defined Con rules is supported by its latest-year data. Therefore, Pros/Cons coverage is 92/92 for Pros and 91/92 for Cons.
+- **JIOFIN:** The company has only 2 years of available data and was skipped from batch tearsheet generation as required by the Day 34 rule to skip companies with fewer than 3 years of data. Therefore, 91 company tearsheets were generated.
+- **Sector Reports:** The current database contains 10 broad-sector categories covering all 92 companies, so 10 sector PDFs were generated rather than inventing an 11th sector.
+- **Tearsheet File Size:** All 91 generated tearsheets are greater than 30 KB.
+- **Visual Validation:** 5 tearsheets were visually reviewed and passed without major overflow, blank-page, or chart-rendering issues.
+- **Cash Flow Intelligence:** `cashflow_intelligence.xlsx` contains exactly 92 rows and all required columns.
+- **Sector Report Module:** `src/reports/sector_report.py` was created and successfully tested.
+
 
 ## Author
 
