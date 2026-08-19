@@ -1,9 +1,9 @@
 import os
 import sqlite3
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # ------------------------------------------------------
 # Paths
@@ -20,6 +20,7 @@ os.makedirs(
 # ------------------------------------------------------
 # Radar Plot Function
 # ------------------------------------------------------
+
 
 def plot_radar(
     company_name,
@@ -48,7 +49,7 @@ def plot_radar(
     peer_values += peer_values[:1]
     angles += angles[:1]
 
-    fig = plt.figure(figsize=(8, 8))
+    plt.figure(figsize=(8, 8))
 
     ax = plt.subplot(
         111,
@@ -103,6 +104,7 @@ def plot_radar(
 
     plt.close()
 
+
 # ------------------------------------------------------
 # Main
 # ------------------------------------------------------
@@ -110,7 +112,6 @@ def plot_radar(
 if __name__ == "__main__":
 
     conn = sqlite3.connect(DB_PATH)
-
 
     query = """
     SELECT
@@ -167,10 +168,7 @@ if __name__ == "__main__":
             df[col] = 50
             continue
 
-        df[col] = (
-            (df[col] - minimum)
-            / (maximum - minimum)
-        ) * 100
+        df[col] = ((df[col] - minimum) / (maximum - minimum)) * 100
 
     labels = [
         "ROE",
@@ -184,8 +182,6 @@ if __name__ == "__main__":
     ]
 
     grouped = df.groupby("peer_group_name")
-
-
 
     total = 0
 
@@ -202,12 +198,7 @@ if __name__ == "__main__":
 
         if pd.notna(peer_group):
 
-            peer_avg = (
-                grouped
-                .get_group(peer_group)[metrics]
-                .mean()
-                .fillna(0)
-            )
+            peer_avg = grouped.get_group(peer_group)[metrics].mean().fillna(0)
 
         # -----------------------------------------
         # No peer group → compare with Nifty100 average
@@ -215,11 +206,7 @@ if __name__ == "__main__":
 
         else:
 
-            peer_avg = (
-                df[metrics]
-                .mean()
-                .fillna(0)
-            )
+            peer_avg = df[metrics].mean().fillna(0)
 
         filename = os.path.join(
             OUTPUT_DIR,

@@ -4,32 +4,21 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-
 # ============================================================
 # PATHS
 # ============================================================
 
 DB_PATH = Path("data/db/nifty100.db")
 
-CAPITAL_ALLOCATION_FILE = Path(
-    "output/capital_allocation.csv"
-)
+CAPITAL_ALLOCATION_FILE = Path("output/capital_allocation.csv")
 
-CASHFLOW_INTELLIGENCE_FILE = Path(
-    "output/cashflow_intelligence.xlsx"
-)
+CASHFLOW_INTELLIGENCE_FILE = Path("output/cashflow_intelligence.xlsx")
 
-DISTRIBUTION_FILE = Path(
-    "output/capital_allocation_distribution.csv"
-)
+DISTRIBUTION_FILE = Path("output/capital_allocation_distribution.csv")
 
-PATTERN_CHANGES_FILE = Path(
-    "output/pattern_changes.csv"
-)
+PATTERN_CHANGES_FILE = Path("output/pattern_changes.csv")
 
-VERIFICATION_FILE = Path(
-    "output/capital_allocation_verification.csv"
-)
+VERIFICATION_FILE = Path("output/capital_allocation_verification.csv")
 
 
 # ============================================================
@@ -52,7 +41,9 @@ EXPECTED_PATTERNS = [
 # LOAD CURRENT COMPANY UNIVERSE
 # ============================================================
 
+
 def load_company_universe():
+    "Load company universe."
 
     con = sqlite3.connect(DB_PATH)
 
@@ -74,11 +65,11 @@ def load_company_universe():
 # LOAD CAPITAL ALLOCATION
 # ============================================================
 
-def load_capital_allocation():
 
-    df = pd.read_csv(
-        CAPITAL_ALLOCATION_FILE
-    )
+def load_capital_allocation():
+    "Load capital allocation."
+
+    df = pd.read_csv(CAPITAL_ALLOCATION_FILE)
 
     required_columns = [
         "company_id",
@@ -89,16 +80,11 @@ def load_capital_allocation():
         "pattern_label",
     ]
 
-    missing = [
-        col
-        for col in required_columns
-        if col not in df.columns
-    ]
+    missing = [col for col in required_columns if col not in df.columns]
 
     if missing:
         raise ValueError(
-            "capital_allocation.csv is missing columns: "
-            + ", ".join(missing)
+            "capital_allocation.csv is missing columns: " + ", ".join(missing)
         )
 
     return df
@@ -108,7 +94,9 @@ def load_capital_allocation():
 # NORMALIZE YEAR
 # ============================================================
 
+
 def extract_year(value):
+    "Extract year."
 
     if pd.isna(value):
         return np.nan
@@ -132,36 +120,27 @@ def extract_year(value):
 # VERIFY CAPITAL ALLOCATION COVERAGE
 # ============================================================
 
+
 def verify_coverage(
     companies,
     capital_allocation,
 ):
+    "Verify coverage."
 
-    db_companies = set(
-        companies["company_id"]
-    )
+    db_companies = set(companies["company_id"])
 
-    csv_companies = set(
-        capital_allocation["company_id"]
-    )
+    csv_companies = set(capital_allocation["company_id"])
 
-    missing_companies = sorted(
-        db_companies - csv_companies
-    )
+    missing_companies = sorted(db_companies - csv_companies)
 
-    extra_companies = sorted(
-        csv_companies - db_companies
-    )
+    extra_companies = sorted(csv_companies - db_companies)
 
     verification_rows = []
 
-    for company_id in sorted(
-        db_companies
-    ):
+    for company_id in sorted(db_companies):
 
         company_rows = capital_allocation[
-            capital_allocation["company_id"]
-            == company_id
+            capital_allocation["company_id"] == company_id
         ]
 
         if company_rows.empty:
@@ -181,18 +160,12 @@ def verify_coverage(
                 {
                     "company_id": company_id,
                     "status": "PRESENT",
-                    "row_count": len(
-                        company_rows
-                    ),
-                    "year_count": company_rows[
-                        "year"
-                    ].nunique(),
+                    "row_count": len(company_rows),
+                    "year_count": company_rows["year"].nunique(),
                 }
             )
 
-    verification = pd.DataFrame(
-        verification_rows
-    )
+    verification = pd.DataFrame(verification_rows)
 
     return (
         verification,
@@ -205,52 +178,39 @@ def verify_coverage(
 # CLEAN CURRENT-UNIVERSE CAPITAL ALLOCATION
 # ============================================================
 
+
 def prepare_current_universe(
     capital_allocation,
     companies,
 ):
+    "Prepare current universe."
 
-    current_ids = set(
-        companies["company_id"]
-    )
+    current_ids = set(companies["company_id"])
 
-    df = capital_allocation[
-        capital_allocation["company_id"].isin(
-            current_ids
-        )
-    ].copy()
+    df = capital_allocation[capital_allocation["company_id"].isin(current_ids)].copy()
 
-    df["year_num"] = df["year"].apply(
-        extract_year
-    )
+    df["year_num"] = df["year"].apply(extract_year)
 
     # Remove rows where year cannot be interpreted.
-    df = df[
-        df["year_num"].notna()
-    ].copy()
+    df = df[df["year_num"].notna()].copy()
 
-    df["year_num"] = df[
-        "year_num"
-    ].astype(int)
+    df["year_num"] = df["year_num"].astype(int)
 
     # Remove duplicate company/year records.
     #
     # Your original file contains duplicated historical
     # records for some companies.
-    df = (
-        df.sort_values(
-            [
-                "company_id",
-                "year_num",
-            ]
-        )
-        .drop_duplicates(
-            subset=[
-                "company_id",
-                "year_num",
-            ],
-            keep="last",
-        )
+    df = df.sort_values(
+        [
+            "company_id",
+            "year_num",
+        ]
+    ).drop_duplicates(
+        subset=[
+            "company_id",
+            "year_num",
+        ],
+        keep="last",
     )
 
     return df
@@ -260,21 +220,18 @@ def prepare_current_universe(
 # LATEST-YEAR DISTRIBUTION
 # ============================================================
 
+
 def generate_latest_distribution(
     current_df,
     companies,
 ):
+    "Generate latest distribution."
 
     rows = []
 
-    for company_id in companies[
-        "company_id"
-    ]:
+    for company_id in companies["company_id"]:
 
-        company_data = current_df[
-            current_df["company_id"]
-            == company_id
-        ]
+        company_data = current_df[current_df["company_id"] == company_id]
 
         if company_data.empty:
 
@@ -283,17 +240,11 @@ def generate_latest_distribution(
 
         else:
 
-            latest = company_data.sort_values(
-                "year_num"
-            ).iloc[-1]
+            latest = company_data.sort_values("year_num").iloc[-1]
 
-            pattern = latest[
-                "pattern_label"
-            ]
+            pattern = latest["pattern_label"]
 
-            latest_year = latest[
-                "year_num"
-            ]
+            latest_year = latest["year_num"]
 
         rows.append(
             {
@@ -303,31 +254,18 @@ def generate_latest_distribution(
             }
         )
 
-    latest_df = pd.DataFrame(
-        rows
-    )
+    latest_df = pd.DataFrame(rows)
 
     distribution = (
-        latest_df[
-            "latest_pattern"
-        ]
+        latest_df["latest_pattern"]
         .value_counts()
-        .rename_axis(
-            "pattern_label"
-        )
-        .reset_index(
-            name="company_count"
-        )
+        .rename_axis("pattern_label")
+        .reset_index(name="company_count")
     )
 
     # Ensure all eight expected patterns
     # appear even if count is zero.
-    expected_df = pd.DataFrame(
-        {
-            "pattern_label":
-                EXPECTED_PATTERNS
-        }
-    )
+    expected_df = pd.DataFrame({"pattern_label": EXPECTED_PATTERNS})
 
     distribution = expected_df.merge(
         distribution,
@@ -335,21 +273,10 @@ def generate_latest_distribution(
         how="left",
     )
 
-    distribution[
-        "company_count"
-    ] = distribution[
-        "company_count"
-    ].fillna(0).astype(int)
+    distribution["company_count"] = distribution["company_count"].fillna(0).astype(int)
 
     # Add insufficient-data count separately.
-    insufficient_count = int(
-        (
-            latest_df[
-                "latest_pattern"
-            ]
-            == "Insufficient Data"
-        ).sum()
-    )
+    insufficient_count = int((latest_df["latest_pattern"] == "Insufficient Data").sum())
 
     distribution = pd.concat(
         [
@@ -357,10 +284,8 @@ def generate_latest_distribution(
             pd.DataFrame(
                 [
                     {
-                        "pattern_label":
-                            "Insufficient Data",
-                        "company_count":
-                            insufficient_count,
+                        "pattern_label": "Insufficient Data",
+                        "company_count": insufficient_count,
                     }
                 ]
             ),
@@ -378,60 +303,36 @@ def generate_latest_distribution(
 # ADD CAPITAL ALLOCATION TO CASHFLOW INTELLIGENCE
 # ============================================================
 
+
 def update_cashflow_intelligence(
     latest_df,
 ):
+    "Update cashflow intelligence."
 
     if not CASHFLOW_INTELLIGENCE_FILE.exists():
 
-        raise FileNotFoundError(
-            "cashflow_intelligence.xlsx not found."
-        )
+        raise FileNotFoundError("cashflow_intelligence.xlsx not found.")
 
-    intelligence = pd.read_excel(
-        CASHFLOW_INTELLIGENCE_FILE
-    )
+    intelligence = pd.read_excel(CASHFLOW_INTELLIGENCE_FILE)
 
     if "company_id" not in intelligence.columns:
 
-        raise ValueError(
-            "cashflow_intelligence.xlsx does not "
-            "contain company_id."
-        )
+        raise ValueError("cashflow_intelligence.xlsx does not " "contain company_id.")
 
     # Remove old column if this script is run again.
-    if (
-        "capital_allocation_label"
-        in intelligence.columns
-    ):
+    if "capital_allocation_label" in intelligence.columns:
 
-        intelligence = intelligence.drop(
-            columns=[
-                "capital_allocation_label"
-            ]
-        )
+        intelligence = intelligence.drop(columns=["capital_allocation_label"])
 
-    allocation_map = latest_df.set_index(
-        "company_id"
-    )[
-        "latest_pattern"
-    ].to_dict()
+    allocation_map = latest_df.set_index("company_id")["latest_pattern"].to_dict()
 
-    intelligence[
-        "capital_allocation_label"
-    ] = intelligence[
-        "company_id"
-    ].map(
+    intelligence["capital_allocation_label"] = intelligence["company_id"].map(
         allocation_map
     )
 
-    intelligence[
+    intelligence["capital_allocation_label"] = intelligence[
         "capital_allocation_label"
-    ] = intelligence[
-        "capital_allocation_label"
-    ].fillna(
-        "Insufficient Data"
-    )
+    ].fillna("Insufficient Data")
 
     # Rewrite workbook.
     intelligence.to_excel(
@@ -446,19 +347,17 @@ def update_cashflow_intelligence(
 # PATTERN CHANGES YEAR-OVER-YEAR
 # ============================================================
 
+
 def generate_pattern_changes(
     current_df,
 ):
+    "Generate pattern changes."
 
     changes = []
 
-    for company_id, group in current_df.groupby(
-        "company_id"
-    ):
+    for company_id, group in current_df.groupby("company_id"):
 
-        group = group.sort_values(
-            "year_num"
-        ).copy()
+        group = group.sort_values("year_num").copy()
 
         group = group[
             [
@@ -476,42 +375,20 @@ def generate_pattern_changes(
 
             if previous_row is not None:
 
-                old_pattern = previous_row[
-                    "pattern_label"
-                ]
+                old_pattern = previous_row["pattern_label"]
 
-                new_pattern = row[
-                    "pattern_label"
-                ]
+                new_pattern = row["pattern_label"]
 
                 if old_pattern != new_pattern:
 
                     changes.append(
                         {
-                            "company_id":
-                                company_id,
-                            "from_year":
-                                int(
-                                    previous_row[
-                                        "year_num"
-                                    ]
-                                ),
-                            "to_year":
-                                int(
-                                    row[
-                                        "year_num"
-                                    ]
-                                ),
-                            "previous_pattern":
-                                old_pattern,
-                            "new_pattern":
-                                new_pattern,
-                            "change":
-                                (
-                                    f"{old_pattern} "
-                                    f"-> "
-                                    f"{new_pattern}"
-                                ),
+                            "company_id": company_id,
+                            "from_year": int(previous_row["year_num"]),
+                            "to_year": int(row["year_num"]),
+                            "previous_pattern": old_pattern,
+                            "new_pattern": new_pattern,
+                            "change": (f"{old_pattern} " f"-> " f"{new_pattern}"),
                         }
                     )
 
@@ -536,7 +413,9 @@ def generate_pattern_changes(
 # MAIN
 # ============================================================
 
+
 def main():
+    "Main."
 
     print("=" * 78)
     print("DAY 32 - CAPITAL ALLOCATION REPORT")
@@ -548,9 +427,7 @@ def main():
 
     companies = load_company_universe()
 
-    capital_allocation = (
-        load_capital_allocation()
-    )
+    capital_allocation = load_capital_allocation()
 
     print()
     print(
@@ -565,9 +442,7 @@ def main():
 
     print(
         "CSV unique companies        :",
-        capital_allocation[
-            "company_id"
-        ].nunique(),
+        capital_allocation["company_id"].nunique(),
     )
 
     # --------------------------------------------------------
@@ -600,9 +475,7 @@ def main():
 
     print(
         "CSV companies      :",
-        capital_allocation[
-            "company_id"
-        ].nunique(),
+        capital_allocation["company_id"].nunique(),
     )
 
     print(
@@ -646,9 +519,7 @@ def main():
 
     print(
         "Current-universe companies:",
-        current_df[
-            "company_id"
-        ].nunique(),
+        current_df["company_id"].nunique(),
     )
 
     # --------------------------------------------------------
@@ -673,21 +544,13 @@ def main():
     print("LATEST-YEAR PATTERN DISTRIBUTION")
     print("=" * 78)
 
-    print(
-        distribution.to_string(
-            index=False
-        )
-    )
+    print(distribution.to_string(index=False))
 
     # --------------------------------------------------------
     # Update Day 31 Excel
     # --------------------------------------------------------
 
-    intelligence = (
-        update_cashflow_intelligence(
-            latest_df
-        )
-    )
+    intelligence = update_cashflow_intelligence(latest_df)
 
     print()
     print("=" * 78)
@@ -701,19 +564,14 @@ def main():
 
     print(
         "Capital allocation column added:",
-        "capital_allocation_label"
-        in intelligence.columns,
+        "capital_allocation_label" in intelligence.columns,
     )
 
     # --------------------------------------------------------
     # Pattern changes
     # --------------------------------------------------------
 
-    changes = (
-        generate_pattern_changes(
-            current_df
-        )
-    )
+    changes = generate_pattern_changes(current_df)
 
     changes.to_csv(
         PATTERN_CHANGES_FILE,
@@ -733,17 +591,11 @@ def main():
     if not changes.empty:
 
         print()
-        print(
-            changes.head(20).to_string(
-                index=False
-            )
-        )
+        print(changes.head(20).to_string(index=False))
 
     else:
 
-        print(
-            "No year-over-year pattern changes found."
-        )
+        print("No year-over-year pattern changes found.")
 
     # --------------------------------------------------------
     # Final verification
@@ -761,9 +613,7 @@ def main():
 
     print(
         "Companies represented  :",
-        current_df[
-            "company_id"
-        ].nunique(),
+        current_df["company_id"].nunique(),
     )
 
     print(
@@ -797,20 +647,14 @@ def main():
     )
 
     print()
-    print(
-        "NOTE: ATGL has no CFO/CFI/CFF data in the current database."
-    )
+    print("NOTE: ATGL has no CFO/CFI/CFF data in the current database.")
 
     if missing_companies:
 
-        print(
-            "ATGL/current-universe coverage limitation is documented."
-        )
+        print("ATGL/current-universe coverage limitation is documented.")
 
     print()
-    print(
-        "STATUS: Day 32 report generated."
-    )
+    print("STATUS: Day 32 report generated.")
 
 
 # ============================================================

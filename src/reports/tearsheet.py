@@ -2,31 +2,27 @@ import io
 import sqlite3
 from pathlib import Path
 
-import pandas as pd
+import matplotlib
 import numpy as np
-
+import pandas as pd
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate,
+    Image,
+    PageBreak,
     Paragraph,
+    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
-    PageBreak,
-    KeepTogether,
-    Image,
 )
-
-import matplotlib
 
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
-
 
 # ============================================================
 # PATHS
@@ -34,17 +30,11 @@ import matplotlib.pyplot as plt
 
 DB_PATH = Path("data/db/nifty100.db")
 
-PROS_CONS_FILE = Path(
-    "output/pros_cons_generated.csv"
-)
+PROS_CONS_FILE = Path("output/pros_cons_generated.csv")
 
-CASHFLOW_INTELLIGENCE_FILE = Path(
-    "output/cashflow_intelligence.xlsx"
-)
+CASHFLOW_INTELLIGENCE_FILE = Path("output/cashflow_intelligence.xlsx")
 
-OUTPUT_DIR = Path(
-    "output/tearsheets"
-)
+OUTPUT_DIR = Path("output/tearsheets")
 
 
 # ============================================================
@@ -165,7 +155,9 @@ BADGE_STYLE = ParagraphStyle(
 # DATABASE
 # ============================================================
 
+
 def load_company_data(company_id):
+    "Load company data."
 
     con = sqlite3.connect(DB_PATH)
 
@@ -218,8 +210,7 @@ def load_company_data(company_id):
             cash_from_operations_cr,
             revenue_cagr_5yr,
             pat_cagr_5yr,
-            eps_cagr_5yr,
-            return_on_capital_employed_pct
+            eps_cagr_5yr
         FROM financial_ratios
         WHERE company_id = ?
         ORDER BY year
@@ -295,7 +286,9 @@ def load_company_data(company_id):
 # HELPERS
 # ============================================================
 
+
 def extract_year(value):
+    "Extract year."
 
     if pd.isna(value):
         return None
@@ -314,49 +307,39 @@ def extract_year(value):
 
 
 def prepare_year_data(df):
+    "Prepare year data."
 
     df = df.copy()
 
     if df.empty:
         return df
 
-    df["year_num"] = df["year"].apply(
-        extract_year
-    )
+    df["year_num"] = df["year"].apply(extract_year)
 
-    df = df[
-        df["year_num"].notna()
-    ].copy()
+    df = df[df["year_num"].notna()].copy()
 
-    df["year_num"] = df[
-        "year_num"
-    ].astype(int)
+    df["year_num"] = df["year_num"].astype(int)
 
     # Remove duplicate company/year rows.
     if "company_id" in df.columns:
-        df = (
-            df.sort_values("year_num")
-            .drop_duplicates(
-                subset=[
-                    "company_id",
-                    "year_num",
-                ],
-                keep="last",
-            )
+        df = df.sort_values("year_num").drop_duplicates(
+            subset=[
+                "company_id",
+                "year_num",
+            ],
+            keep="last",
         )
     else:
-        df = (
-            df.sort_values("year_num")
-            .drop_duplicates(
-                subset=["year_num"],
-                keep="last",
-            )
+        df = df.sort_values("year_num").drop_duplicates(
+            subset=["year_num"],
+            keep="last",
         )
 
     return df
 
 
 def fmt_number(value, decimals=1):
+    "Fmt number."
 
     if pd.isna(value):
         return "N/A"
@@ -365,6 +348,7 @@ def fmt_number(value, decimals=1):
 
 
 def fmt_pct(value, decimals=1):
+    "Fmt pct."
 
     if pd.isna(value):
         return "N/A"
@@ -373,6 +357,7 @@ def fmt_pct(value, decimals=1):
 
 
 def paragraph(text, style=BODY_STYLE):
+    "Paragraph."
 
     if text is None:
         text = ""
@@ -387,12 +372,14 @@ def paragraph(text, style=BODY_STYLE):
 # PAGE HEADER
 # ============================================================
 
+
 def draw_page_header(
     canvas,
     doc,
     company_name,
     ticker,
 ):
+    "Draw page header."
 
     canvas.saveState()
 
@@ -453,7 +440,9 @@ def draw_page_header(
 # KPI TILES
 # ============================================================
 
+
 def create_kpi_tiles(kpis):
+    "Create kpi tiles."
 
     cells = []
 
@@ -474,9 +463,7 @@ def create_kpi_tiles(kpis):
                     )
                 ],
             ],
-            colWidths=[
-                53 * mm
-            ],
+            colWidths=[53 * mm],
             rowHeights=[
                 9 * mm,
                 12 * mm,
@@ -497,9 +484,7 @@ def create_kpi_tiles(kpis):
                         (0, 0),
                         (-1, -1),
                         0.6,
-                        colors.HexColor(
-                            "#CBD5E1"
-                        ),
+                        colors.HexColor("#CBD5E1"),
                     ),
                     (
                         "VALIGN",
@@ -578,22 +563,20 @@ def create_kpi_tiles(kpis):
 # REVENUE / PROFIT CHART
 # ============================================================
 
+
 def create_revenue_profit_chart(
     pnl,
 ):
+    "Create revenue profit chart."
 
-    data = prepare_year_data(
-        pnl
-    )
+    data = prepare_year_data(pnl)
 
     data = data.tail(10)
 
     if data.empty:
         return None
 
-    years = data[
-        "year_num"
-    ].astype(str).tolist()
+    years = data["year_num"].astype(str).tolist()
 
     revenue = pd.to_numeric(
         data["sales"],
@@ -605,9 +588,7 @@ def create_revenue_profit_chart(
         errors="coerce",
     ).fillna(0)
 
-    x = np.arange(
-        len(years)
-    )
+    x = np.arange(len(years))
 
     width = 0.38
 
@@ -689,33 +670,31 @@ def create_revenue_profit_chart(
 # ROE / ROCE DUAL AXIS CHART
 # ============================================================
 
+
 def create_roe_roce_chart(
     ratios,
+    roce_value=None,
 ):
+    "Create roe roce chart."
 
-    data = prepare_year_data(
-        ratios
-    )
+    data = prepare_year_data(ratios)
 
     if data.empty:
         return None
 
     data = data.tail(10)
 
-    years = data[
-        "year_num"
-    ].astype(str).tolist()
+    years = data["year_num"].astype(str).tolist()
 
     roe = pd.to_numeric(
         data["return_on_equity_pct"],
         errors="coerce",
     )
 
-    roce = pd.to_numeric(
-        data[
-            "return_on_capital_employed_pct"
-        ],
-        errors="coerce",
+    roce = pd.Series(
+        [roce_value] * len(data),
+        index=data.index,
+        dtype="float64",
     )
 
     fig, ax1 = plt.subplots(
@@ -814,33 +793,27 @@ def create_roe_roce_chart(
 # BALANCE SHEET STACKED BAR
 # ============================================================
 
+
 def create_balance_chart(
     balance,
 ):
+    "Create balance chart."
 
-    data = prepare_year_data(
-        balance
-    )
+    data = prepare_year_data(balance)
 
     if data.empty:
         return None
 
     data = data.tail(8)
 
-    years = data[
-        "year_num"
-    ].astype(str).tolist()
+    years = data["year_num"].astype(str).tolist()
 
-    equity = (
-        pd.to_numeric(
-            data["equity_capital"],
-            errors="coerce",
-        ).fillna(0)
-        + pd.to_numeric(
-            data["reserves"],
-            errors="coerce",
-        ).fillna(0)
-    )
+    equity = pd.to_numeric(
+        data["equity_capital"],
+        errors="coerce",
+    ).fillna(
+        0
+    ) + pd.to_numeric(data["reserves"], errors="coerce",).fillna(0)
 
     borrowings = pd.to_numeric(
         data["borrowings"],
@@ -852,9 +825,7 @@ def create_balance_chart(
         errors="coerce",
     ).fillna(0)
 
-    x = np.arange(
-        len(years)
-    )
+    x = np.arange(len(years))
 
     fig, ax = plt.subplots(
         figsize=(7.0, 2.5),
@@ -941,13 +912,13 @@ def create_balance_chart(
 # CASH FLOW WATERFALL
 # ============================================================
 
+
 def create_cashflow_waterfall(
     cashflow,
 ):
+    "Create cashflow waterfall."
 
-    data = prepare_year_data(
-        cashflow
-    )
+    data = prepare_year_data(cashflow)
 
     if data.empty:
         return None
@@ -981,11 +952,7 @@ def create_cashflow_waterfall(
 
     for i, value in enumerate(values):
 
-        value = (
-            0
-            if pd.isna(value)
-            else float(value)
-        )
+        value = 0 if pd.isna(value) else float(value)
 
         if i == 3:
 
@@ -996,19 +963,13 @@ def create_cashflow_waterfall(
 
             if value >= 0:
 
-                bottoms.append(
-                    cumulative
-                )
+                bottoms.append(cumulative)
                 heights.append(value)
 
             else:
 
-                bottoms.append(
-                    cumulative + value
-                )
-                heights.append(
-                    abs(value)
-                )
+                bottoms.append(cumulative + value)
+                heights.append(abs(value))
 
             cumulative += value
 
@@ -1023,9 +984,7 @@ def create_cashflow_waterfall(
         linewidth=0.8,
     )
 
-    ax.set_xticks(
-        range(4)
-    )
+    ax.set_xticks(range(4))
 
     ax.set_xticklabels(
         labels,
@@ -1078,34 +1037,25 @@ def create_cashflow_waterfall(
 # PROS / CONS
 # ============================================================
 
+
 def load_pros_cons(
     company_id,
 ):
+    "Load pros cons."
 
     if not PROS_CONS_FILE.exists():
         return [], []
 
-    df = pd.read_csv(
-        PROS_CONS_FILE
-    )
+    df = pd.read_csv(PROS_CONS_FILE)
 
-    company = df[
-        df["company_id"]
-        == company_id
-    ].copy()
+    company = df[df["company_id"] == company_id].copy()
 
-    pros = company[
-        company["type"].str.lower()
-        == "pro"
-    ].sort_values(
+    pros = company[company["type"].str.lower() == "pro"].sort_values(
         "confidence_pct",
         ascending=False,
     )
 
-    cons = company[
-        company["type"].str.lower()
-        == "con"
-    ].sort_values(
+    cons = company[company["type"].str.lower() == "con"].sort_values(
         "confidence_pct",
         ascending=False,
     )
@@ -1120,28 +1070,23 @@ def load_pros_cons(
 # CAPITAL ALLOCATION
 # ============================================================
 
+
 def load_capital_allocation(
     company_id,
 ):
+    "Load capital allocation."
 
     if not CASHFLOW_INTELLIGENCE_FILE.exists():
         return "Insufficient Data"
 
-    df = pd.read_excel(
-        CASHFLOW_INTELLIGENCE_FILE
-    )
+    df = pd.read_excel(CASHFLOW_INTELLIGENCE_FILE)
 
-    row = df[
-        df["company_id"]
-        == company_id
-    ]
+    row = df[df["company_id"] == company_id]
 
     if row.empty:
         return "Insufficient Data"
 
-    value = row.iloc[0].get(
-        "capital_allocation_label"
-    )
+    value = row.iloc[0].get("capital_allocation_label")
 
     if pd.isna(value):
         return "Insufficient Data"
@@ -1153,6 +1098,7 @@ def load_capital_allocation(
 # PAGE 1
 # ============================================================
 
+
 def build_page_1(
     story,
     company,
@@ -1160,14 +1106,7 @@ def build_page_1(
     ratios,
     pnl,
 ):
-
-    company_name = company.iloc[0][
-        "company_name"
-    ]
-
-    ticker = company.iloc[0][
-        "company_id"
-    ]
+    "Build page 1."
 
     story.append(
         Spacer(
@@ -1177,10 +1116,7 @@ def build_page_1(
     )
 
     # Sector information
-    sector_text = (
-        f"{sector} | "
-        f"{company.iloc[0].get('about_company', '')}"
-    )
+    sector_text = f"{sector} | " f"{company.iloc[0].get('about_company', '')}"
 
     story.append(
         paragraph(
@@ -1200,11 +1136,7 @@ def build_page_1(
     # Six KPI tiles
     # --------------------------------------------------------
 
-    latest_ratios = (
-        prepare_year_data(
-            ratios
-        )
-    )
+    latest_ratios = prepare_year_data(ratios)
 
     if not latest_ratios.empty:
         latest = latest_ratios.iloc[-1]
@@ -1224,8 +1156,8 @@ def build_page_1(
         (
             "ROCE",
             fmt_pct(
-                latest.get(
-                    "return_on_capital_employed_pct",
+                company.iloc[0].get(
+                    "roce_percentage",
                     np.nan,
                 )
             ),
@@ -1282,11 +1214,7 @@ def build_page_1(
         ),
     ]
 
-    story.append(
-        create_kpi_tiles(
-            kpis
-        )
-    )
+    story.append(create_kpi_tiles(kpis))
 
     story.append(
         Spacer(
@@ -1299,16 +1227,11 @@ def build_page_1(
     # Charts
     # --------------------------------------------------------
 
-    revenue_chart = (
-        create_revenue_profit_chart(
-            pnl
-        )
-    )
+    revenue_chart = create_revenue_profit_chart(pnl)
 
-    roe_chart = (
-        create_roe_roce_chart(
-            ratios
-        )
+    roe_chart = create_roe_roce_chart(
+        ratios,
+        company.iloc[0].get("roce_percentage"),
     )
 
     chart_table = Table(
@@ -1357,14 +1280,13 @@ def build_page_1(
         )
     )
 
-    story.append(
-        chart_table
-    )
+    story.append(chart_table)
 
 
 # ============================================================
 # PAGE 2
 # ============================================================
+
 
 def build_page_2(
     story,
@@ -1372,6 +1294,7 @@ def build_page_2(
     balance,
     cashflow,
 ):
+    "Build page 2."
 
     # --------------------------------------------------------
     # Balance sheet chart
@@ -1384,16 +1307,10 @@ def build_page_2(
         )
     )
 
-    balance_chart = (
-        create_balance_chart(
-            balance
-        )
-    )
+    balance_chart = create_balance_chart(balance)
 
     if balance_chart:
-        story.append(
-            balance_chart
-        )
+        story.append(balance_chart)
     else:
         story.append(
             paragraph(
@@ -1420,16 +1337,10 @@ def build_page_2(
         )
     )
 
-    cashflow_chart = (
-        create_cashflow_waterfall(
-            cashflow
-        )
-    )
+    cashflow_chart = create_cashflow_waterfall(cashflow)
 
     if cashflow_chart:
-        story.append(
-            cashflow_chart
-        )
+        story.append(cashflow_chart)
     else:
         story.append(
             paragraph(
@@ -1449,9 +1360,7 @@ def build_page_2(
     # Pros / Cons
     # --------------------------------------------------------
 
-    pros, cons = load_pros_cons(
-        company_id
-    )
+    pros, cons = load_pros_cons(company_id)
 
     pros_flowables = []
 
@@ -1496,7 +1405,6 @@ def build_page_2(
                 BULLET_STYLE,
             )
         )
-
 
     pros_table = Table(
         [
@@ -1592,9 +1500,7 @@ def build_page_2(
         )
     )
 
-    story.append(
-        pros_table
-    )
+    story.append(pros_table)
 
     story.append(
         Spacer(
@@ -1603,15 +1509,11 @@ def build_page_2(
         )
     )
 
-
-
     # --------------------------------------------------------
     # Capital allocation badge
     # --------------------------------------------------------
 
-    allocation = load_capital_allocation(
-        company_id
-    )
+    allocation = load_capital_allocation(company_id)
 
     badge = Table(
         [
@@ -1622,12 +1524,8 @@ def build_page_2(
                 )
             ]
         ],
-        colWidths=[
-            186 * mm
-        ],
-        rowHeights=[
-            9 * mm
-        ],
+        colWidths=[186 * mm],
+        rowHeights=[9 * mm],
     )
 
     badge.setStyle(
@@ -1662,19 +1560,19 @@ def build_page_2(
         )
     )
 
-    story.append(
-        badge
-    )
+    story.append(badge)
 
 
 # ============================================================
 # GENERATE TEARSHEET
 # ============================================================
 
+
 def generate_tearsheet(
     company_id,
     output_path=None,
 ):
+    "Generate tearsheet."
 
     (
         company,
@@ -1683,25 +1581,15 @@ def generate_tearsheet(
         pnl,
         balance,
         cashflow,
-    ) = load_company_data(
-        company_id
-    )
+    ) = load_company_data(company_id)
 
     if company.empty:
 
-        raise ValueError(
-            f"Company {company_id} not found."
-        )
+        raise ValueError(f"Company {company_id} not found.")
 
-    company_name = company.iloc[0][
-        "company_name"
-    ]
+    company_name = company.iloc[0]["company_name"]
 
-    sector = (
-        sectors.iloc[0]["broad_sector"]
-        if not sectors.empty
-        else "Unknown"
-    )
+    sector = sectors.iloc[0]["broad_sector"] if not sectors.empty else "Unknown"
 
     if output_path is None:
 
@@ -1710,10 +1598,7 @@ def generate_tearsheet(
             exist_ok=True,
         )
 
-        output_path = (
-            OUTPUT_DIR
-            / f"{company_id}_tearsheet.pdf"
-        )
+        output_path = OUTPUT_DIR / f"{company_id}_tearsheet.pdf"
 
     doc = SimpleDocTemplate(
         str(output_path),
@@ -1722,10 +1607,7 @@ def generate_tearsheet(
         leftMargin=12 * mm,
         topMargin=28 * mm,
         bottomMargin=12 * mm,
-        title=(
-            f"{company_name} "
-            f"({company_id}) Tearsheet"
-        ),
+        title=(f"{company_name} " f"({company_id}) Tearsheet"),
         author="Nifty 100 Analytics",
     )
 
@@ -1741,9 +1623,7 @@ def generate_tearsheet(
     )
 
     # Page 2
-    story.append(
-        PageBreak()
-    )
+    story.append(PageBreak())
 
     build_page_2(
         story,
@@ -1756,6 +1636,7 @@ def generate_tearsheet(
         canvas,
         doc,
     ):
+        "Page callback."
         draw_page_header(
             canvas,
             doc,
@@ -1769,9 +1650,7 @@ def generate_tearsheet(
         onLaterPages=page_callback,
     )
 
-    return Path(
-        output_path
-    )
+    return Path(output_path)
 
 
 # ============================================================
@@ -1788,6 +1667,7 @@ TEST_COMPANIES = [
 
 
 def test_tearsheets():
+    "Test tearsheets."
 
     print("=" * 78)
     print("DAY 33 - PDF TEARSHEET TEMPLATE TEST")
@@ -1802,10 +1682,7 @@ def test_tearsheets():
 
     for ticker in TEST_COMPANIES:
 
-        output = (
-            OUTPUT_DIR
-            / f"{ticker}_tearsheet.pdf"
-        )
+        output = OUTPUT_DIR / f"{ticker}_tearsheet.pdf"
 
         try:
 
@@ -1822,12 +1699,9 @@ def test_tearsheets():
                 }
             )
 
-            print(
-                f"PASS  {ticker:<12} "
-                f"{generated}"
-            )
+            print(f"PASS  {ticker:<12} " f"{generated}")
 
-        except Exception as exc:
+        except (KeyError, TypeError, ValueError, OSError) as exc:
 
             results.append(
                 {
@@ -1838,39 +1712,20 @@ def test_tearsheets():
                 }
             )
 
-            print(
-                f"FAIL  {ticker:<12} "
-                f"{exc}"
-            )
+            print(f"FAIL  {ticker:<12} " f"{exc}")
 
     print()
     print("=" * 78)
     print("DAY 33 TEST SUMMARY")
     print("=" * 78)
 
-    result_df = pd.DataFrame(
-        results
-    )
+    result_df = pd.DataFrame(results)
 
-    print(
-        result_df.to_string(
-            index=False
-        )
-    )
+    print(result_df.to_string(index=False))
 
-    passed = int(
-        (
-            result_df["status"]
-            == "PASS"
-        ).sum()
-    )
+    passed = int((result_df["status"] == "PASS").sum())
 
-    failed = int(
-        (
-            result_df["status"]
-            == "FAIL"
-        ).sum()
-    )
+    failed = int((result_df["status"] == "FAIL").sum())
 
     print()
     print(
@@ -1892,9 +1747,7 @@ def test_tearsheets():
     if failed == 0:
 
         print()
-        print(
-            "STATUS: 5 test tearsheets generated successfully."
-        )
+        print("STATUS: 5 test tearsheets generated successfully.")
 
         print(
             "IMPORTANT: Open all 5 PDFs and visually verify"
@@ -1904,9 +1757,7 @@ def test_tearsheets():
     else:
 
         print()
-        print(
-            "STATUS: FIX FAILURES BEFORE DAY 34."
-        )
+        print("STATUS: FIX FAILURES BEFORE DAY 34.")
 
 
 # ============================================================

@@ -1,7 +1,6 @@
 import sqlite3
-import pandas as pd
-import numpy as np
 
+import pandas as pd
 
 DB_PATH = "data/db/nifty100.db"
 

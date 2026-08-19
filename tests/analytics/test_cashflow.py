@@ -1,18 +1,16 @@
-import pytest
-
 from src.analytics.cashflow import (
-    free_cash_flow,
-    cfo_quality_score,
     capex_intensity,
-    fcf_conversion_rate,
     capital_allocation_pattern,
+    cfo_quality_score,
+    fcf_conversion_rate,
+    free_cash_flow,
     generate_capital_allocation_record,
 )
-
 
 # -----------------------------------------------------
 # Free Cash Flow
 # -----------------------------------------------------
+
 
 def test_free_cash_flow():
     assert free_cash_flow(1000, -300) == 700
@@ -21,6 +19,7 @@ def test_free_cash_flow():
 # -----------------------------------------------------
 # CFO Quality Score
 # -----------------------------------------------------
+
 
 def test_cfo_quality_high():
     ratio, label = cfo_quality_score(600, 500)
@@ -54,6 +53,7 @@ def test_cfo_quality_zero_pat():
 # CapEx Intensity
 # -----------------------------------------------------
 
+
 def test_capex_asset_light():
     value, label = capex_intensity(-20, 1000)
 
@@ -79,6 +79,7 @@ def test_capex_capital_intensive():
 # FCF Conversion
 # -----------------------------------------------------
 
+
 def test_fcf_conversion():
     assert fcf_conversion_rate(700, 1000) == 70.0
 
@@ -91,34 +92,21 @@ def test_fcf_conversion_zero_profit():
 # Capital Allocation Patterns
 # -----------------------------------------------------
 
+
 def test_pattern_reinvestor():
-    _, _, _, label = capital_allocation_pattern(
-        100,
-        -50,
-        -20,
-        0.8
-    )
+    _, _, _, label = capital_allocation_pattern(100, -50, -20, 0.8)
 
     assert label == "Reinvestor"
 
 
 def test_pattern_shareholder_returns():
-    _, _, _, label = capital_allocation_pattern(
-        100,
-        -50,
-        -20,
-        1.2
-    )
+    _, _, _, label = capital_allocation_pattern(100, -50, -20, 1.2)
 
     assert label == "Shareholder Returns"
 
 
 def test_pattern_distress():
-    _, _, _, label = capital_allocation_pattern(
-        -100,
-        50,
-        30
-    )
+    _, _, _, label = capital_allocation_pattern(-100, 50, 30)
 
     assert label == "Distress Signal"
 
@@ -126,6 +114,7 @@ def test_pattern_distress():
 # -----------------------------------------------------
 # Summary Function
 # -----------------------------------------------------
+
 
 def test_generate_capital_allocation_record():
 
@@ -138,7 +127,7 @@ def test_generate_capital_allocation_record():
         "cfo_total": 1200,
         "pat_total": 1000,
         "sales": 5000,
-        "operating_profit": 900
+        "operating_profit": 900,
     }
 
     result = generate_capital_allocation_record(sample)

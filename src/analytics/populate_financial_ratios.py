@@ -1,17 +1,11 @@
-import sqlite3
 import os
+import sqlite3
+
 import pandas as pd
 
+from src.analytics.cagr import eps_cagr, pat_cagr, revenue_cagr
+from src.analytics.cashflow import cfo_quality_score, free_cash_flow
 from src.analytics.ratios import calculate_profitability_ratios
-from src.analytics.cashflow import (
-    free_cash_flow,
-    cfo_quality_score
-)
-from src.analytics.cagr import (
-    revenue_cagr,
-    pat_cagr,
-    eps_cagr
-)
 
 DB_PATH = "data/db/nifty100.db"
 
@@ -26,35 +20,21 @@ pl = pd.read_excel(PL_FILE, header=1)
 bs = pd.read_excel(BS_FILE, header=1)
 cf = pd.read_excel(CF_FILE, header=1)
 
-companies = pd.read_excel(
-    COMPANIES_FILE,
-    header=1
-)
+companies = pd.read_excel(COMPANIES_FILE, header=1)
 
 
 print("Merging datasets...")
 
-df = (
-    pl.merge(
-        bs,
-        on=["company_id", "year"],
-        how="inner",
-        suffixes=("", "_bs")
-    )
-    .merge(
-        cf,
-        on=["company_id", "year"],
-        how="inner",
-        suffixes=("", "_cf")
-    )
+df = pl.merge(bs, on=["company_id", "year"], how="inner", suffixes=("", "_bs")).merge(
+    cf, on=["company_id", "year"], how="inner", suffixes=("", "_cf")
 )
 
 
-df = df.sort_values(
-    ["company_id", "year"]
-).reset_index(drop=True)
+df = df.sort_values(["company_id", "year"]).reset_index(drop=True)
+
 
 def compute_company_cagr(company_df):
+    "Compute company cagr."
 
     company_df = company_df.sort_values("year").copy()
 
@@ -71,43 +51,20 @@ def compute_company_cagr(company_df):
         end = company_df.iloc[i]
 
         years = 5
-        rev, _ = revenue_cagr(
-            start["sales"],
-            end["sales"],
-            years,
-            years
-        )
+        rev, _ = revenue_cagr(start["sales"], end["sales"], years, years)
 
-        pat, _ = pat_cagr(
-            start["net_profit"],
-            end["net_profit"],
-            years,
-            years
-        )
+        pat, _ = pat_cagr(start["net_profit"], end["net_profit"], years, years)
 
-        eps, _ = eps_cagr(
-            start["eps"],
-            end["eps"],
-            years,
-            years
-        )
+        eps, _ = eps_cagr(start["eps"], end["eps"], years, years)
 
-        company_df.at[
-            company_df.index[i],
-            "revenue_cagr_5yr"
-        ] = rev
+        company_df.at[company_df.index[i], "revenue_cagr_5yr"] = rev
 
-        company_df.at[
-            company_df.index[i],
-            "pat_cagr_5yr"
-        ] = pat
+        company_df.at[company_df.index[i], "pat_cagr_5yr"] = pat
 
-        company_df.at[
-            company_df.index[i],
-            "eps_cagr_5yr"
-        ] = eps
+        company_df.at[company_df.index[i], "eps_cagr_5yr"] = eps
 
     return company_df
+
 
 frames = []
 
@@ -115,32 +72,28 @@ for company in df["company_id"].unique():
 
     company_df = df[df["company_id"] == company]
 
-    frames.append(
-        compute_company_cagr(company_df)
-    )
+    frames.append(compute_company_cagr(company_df))
 
 df = pd.concat(frames).reset_index(drop=True)
 
 print("CAGR calculated.")
 
 company_lookup = (
-    companies[
-        ["id", "roce_percentage", "roe_percentage"]
-    ]
+    companies[["id", "roce_percentage", "roe_percentage"]]
     .set_index("id")
     .to_dict("index")
 )
 
-
 os.makedirs("output", exist_ok=True)
-
-log_file = open(
+log_file = open(  # noqa: SIM115
     "output/ratio_edge_cases.log",
     "w",
-    encoding="utf-8"
+    encoding="utf-8",
 )
 
+
 def score_profitability(roe, roce, npm):
+    "Score profitability."
 
     score = 0
 
@@ -172,6 +125,7 @@ def score_profitability(roe, roce, npm):
 
 
 def score_growth(revenue_cagr, pat_cagr):
+    "Score growth."
 
     score = 0
 
@@ -195,6 +149,7 @@ def score_growth(revenue_cagr, pat_cagr):
 
 
 def score_leverage(de_ratio, icr):
+    "Score leverage."
 
     score = 0
 
@@ -225,6 +180,7 @@ def score_leverage(de_ratio, icr):
 
     return score
 
+
 records = []
 
 for _, row in df.iterrows():
@@ -245,7 +201,7 @@ for _, row in df.iterrows():
     calc_roce = ratios["roce"]
     calc_roe = ratios["roe"]
 
-        # ROCE comparison
+    # ROCE comparison
     if (
         pd.notna(source_roce)
         and calc_roce is not None
@@ -268,11 +224,7 @@ for _, row in df.iterrows():
         )
 
     # ROE comparison
-    if (
-        pd.notna(source_roe)
-        and calc_roe is not None
-        and abs(calc_roe - source_roe) > 5
-    ):
+    if pd.notna(source_roe) and calc_roe is not None and abs(calc_roe - source_roe) > 5:
 
         category = "Formula discrepancy"
 
@@ -289,15 +241,9 @@ for _, row in df.iterrows():
             f"Category={category}\n"
         )
 
-    fcf = free_cash_flow(
-        row["operating_activity"],
-        row["investing_activity"]
-    )
+    fcf = free_cash_flow(row["operating_activity"], row["investing_activity"])
 
-    cfo_ratio, _ = cfo_quality_score(
-        row["operating_activity"],
-        row["net_profit"]
-    )
+    cfo_ratio, _ = cfo_quality_score(row["operating_activity"], row["net_profit"])
 
     cash_score = 0
 
@@ -308,73 +254,44 @@ for _, row in df.iterrows():
         cash_score += 5
 
     profit_score = score_profitability(
-        ratios["roe"],
-        ratios["roce"],
-        ratios["net_profit_margin"]
+        ratios["roe"], ratios["roce"], ratios["net_profit_margin"]
     )
 
-    growth_score = score_growth(
-        row["revenue_cagr_5yr"],
-        row["pat_cagr_5yr"]
-    )
+    growth_score = score_growth(row["revenue_cagr_5yr"], row["pat_cagr_5yr"])
 
     leverage_score = score_leverage(
-        ratios["debt_to_equity"],
-        ratios["interest_coverage_ratio"]
+        ratios["debt_to_equity"], ratios["interest_coverage_ratio"]
     )
 
-    composite_score = (
-        profit_score +
-        cash_score +
-        growth_score +
-        leverage_score
+    composite_score = profit_score + cash_score + growth_score + leverage_score
+
+    records.append(
+        {
+            "company_id": row["company_id"],
+            "year": row["year"],
+            "net_profit_margin_pct": ratios["net_profit_margin"],
+            "operating_profit_margin_pct": ratios["operating_profit_margin"],
+            "return_on_equity_pct": ratios["roe"],
+            "debt_to_equity": ratios["debt_to_equity"],
+            "interest_coverage": ratios["interest_coverage_ratio"],
+            "asset_turnover": ratios["asset_turnover"],
+            "free_cash_flow_cr": fcf,
+            "capex_cr": abs(row["investing_activity"]),
+            "earnings_per_share": row["eps"],
+            "book_value_per_share": (
+                (row["equity_capital"] + row["reserves"]) / row["equity_capital"]
+                if row["equity_capital"] != 0
+                else None
+            ),
+            "dividend_payout_ratio_pct": row["dividend_payout"],
+            "total_debt_cr": row["borrowings"],
+            "cash_from_operations_cr": row["operating_activity"],
+            "revenue_cagr_5yr": row["revenue_cagr_5yr"],
+            "pat_cagr_5yr": row["pat_cagr_5yr"],
+            "eps_cagr_5yr": row["eps_cagr_5yr"],
+            "composite_quality_score": composite_score,
+        }
     )
-
-
-    records.append({
-
-        "company_id": row["company_id"],
-        "year": row["year"],
-
-        "net_profit_margin_pct": ratios["net_profit_margin"],
-        "operating_profit_margin_pct": ratios["operating_profit_margin"],
-        "return_on_equity_pct": ratios["roe"],
-
-        "debt_to_equity": ratios["debt_to_equity"],
-        "interest_coverage": ratios["interest_coverage_ratio"],
-        "asset_turnover": ratios["asset_turnover"],
-
-        "free_cash_flow_cr": fcf,
-        "capex_cr": abs(row["investing_activity"]),
-        "earnings_per_share": row["eps"],
-
-        "book_value_per_share":
-            (row["equity_capital"] + row["reserves"]) /
-            row["equity_capital"]
-            if row["equity_capital"] != 0
-            else None,
-
-        "dividend_payout_ratio_pct":
-            row["dividend_payout"],
-
-        "total_debt_cr":
-            row["borrowings"],
-
-        "cash_from_operations_cr":
-            row["operating_activity"],
-
-        "revenue_cagr_5yr":
-            row["revenue_cagr_5yr"],
-
-        "pat_cagr_5yr":
-            row["pat_cagr_5yr"],
-
-        "eps_cagr_5yr":
-            row["eps_cagr_5yr"],
-
-        "composite_quality_score":
-            composite_score
-    })
 
 print("Financial ratios calculated.")
 
@@ -387,7 +304,8 @@ updated = 0
 
 for record in records:
 
-    cursor.execute("""
+    cursor.execute(
+        """
     UPDATE financial_ratios
     SET
         net_profit_margin_pct=?,
@@ -410,30 +328,29 @@ for record in records:
     WHERE
         company_id=?
         AND year=?
-    """, (
-
-        record["net_profit_margin_pct"],
-        record["operating_profit_margin_pct"],
-        record["return_on_equity_pct"],
-        record["debt_to_equity"],
-        record["interest_coverage"],
-        record["asset_turnover"],
-        record["free_cash_flow_cr"],
-        record["capex_cr"],
-        record["earnings_per_share"],
-        record["book_value_per_share"],
-        record["dividend_payout_ratio_pct"],
-        record["total_debt_cr"],
-        record["cash_from_operations_cr"],
-        record["revenue_cagr_5yr"],
-        record["pat_cagr_5yr"],
-        record["eps_cagr_5yr"],
-        record["composite_quality_score"],
-
-        record["company_id"],
-        record["year"]
-
-    ))
+    """,
+        (
+            record["net_profit_margin_pct"],
+            record["operating_profit_margin_pct"],
+            record["return_on_equity_pct"],
+            record["debt_to_equity"],
+            record["interest_coverage"],
+            record["asset_turnover"],
+            record["free_cash_flow_cr"],
+            record["capex_cr"],
+            record["earnings_per_share"],
+            record["book_value_per_share"],
+            record["dividend_payout_ratio_pct"],
+            record["total_debt_cr"],
+            record["cash_from_operations_cr"],
+            record["revenue_cagr_5yr"],
+            record["pat_cagr_5yr"],
+            record["eps_cagr_5yr"],
+            record["composite_quality_score"],
+            record["company_id"],
+            record["year"],
+        ),
+    )
 
     updated += cursor.rowcount
 

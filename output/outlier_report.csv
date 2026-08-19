@@ -1,0 +1,6 @@
+company_id,company_name,broad_sector,flagged_metrics,max_abs_zscore
+INDIGO,Interglobe Aviation Ltd,Consumer Discretionary,"return_on_equity_pct, asset_turnover, return_on_capital_employed_pct",3.473055927930586
+ADANIGREEN,Adani Green Energy Ltd,Energy,debt_to_equity,3.022681893660866
+BAJAJHLDNG,Bajaj Holdings & Investment Ltd,Financials,"net_profit_margin_pct, interest_coverage",4.3898739495866295
+ICICIPRULI,ICICI Prudential Life Insurance Company Ltd,Financials,return_on_capital_employed_pct,3.2222750501645443
+PNB,Punjab National Bank,Financials,"return_on_equity_pct, asset_turnover",4.233185886981359

@@ -1,7 +1,7 @@
 import sqlite3
+
 import requests
 import streamlit as st
-
 
 # ==========================================================
 # Configuration
@@ -13,6 +13,7 @@ DB_PATH = "data/db/nifty100.db"
 # ==========================================================
 # Database helpers
 # ==========================================================
+
 
 @st.cache_data(ttl=600)
 def get_companies():
@@ -50,11 +51,7 @@ def get_reports(ticker):
         ORDER BY year DESC
     """
 
-    df = __import__("pandas").read_sql_query(
-        query,
-        conn,
-        params=(ticker,)
-    )
+    df = __import__("pandas").read_sql_query(query, conn, params=(ticker,))
 
     conn.close()
 
@@ -64,6 +61,7 @@ def get_reports(ticker):
 # ==========================================================
 # Check URL
 # ==========================================================
+
 
 def check_report_url(url):
     """
@@ -83,20 +81,11 @@ def check_report_url(url):
         return False
 
     try:
-        response = requests.head(
-            url,
-            allow_redirects=True,
-            timeout=8
-        )
+        response = requests.head(url, allow_redirects=True, timeout=8)
 
         # Some servers do not support HEAD correctly.
         if response.status_code == 405:
-            response = requests.get(
-                url,
-                allow_redirects=True,
-                timeout=8,
-                stream=True
-            )
+            response = requests.get(url, allow_redirects=True, timeout=8, stream=True)
 
         return response.status_code < 400
 
@@ -110,9 +99,7 @@ def check_report_url(url):
 
 st.title("📄 Annual Reports")
 
-st.write(
-    "Search for a company and view its available annual reports."
-)
+st.write("Search for a company and view its available annual reports.")
 
 
 # ==========================================================
@@ -127,8 +114,7 @@ if companies.empty:
 
 
 search = st.text_input(
-    "🔎 Search company or NSE ticker",
-    placeholder="Example: TCS or Tata Consultancy"
+    "🔎 Search company or NSE ticker", placeholder="Example: TCS or Tata Consultancy"
 )
 
 
@@ -141,15 +127,8 @@ if search:
     search_text = search.strip().lower()
 
     matches = companies[
-        companies["ticker"].str.lower().str.contains(
-            search_text,
-            na=False
-        )
-        |
-        companies["company_name"].str.lower().str.contains(
-            search_text,
-            na=False
-        )
+        companies["ticker"].str.lower().str.contains(search_text, na=False)
+        | companies["company_name"].str.lower().str.contains(search_text, na=False)
     ]
 
 else:
@@ -162,22 +141,14 @@ else:
 
 if matches.empty:
 
-    st.warning(
-        "Company not found — please try another name or ticker."
-    )
+    st.warning("Company not found — please try another name or ticker.")
 
     st.stop()
 
 
-options = [
-    f"{row.ticker} — {row.company_name}"
-    for row in matches.itertuples()
-]
+options = [f"{row.ticker} — {row.company_name}" for row in matches.itertuples()]
 
-selected = st.selectbox(
-    "Select Company",
-    options
-)
+selected = st.selectbox("Select Company", options)
 
 
 ticker = selected.split(" — ")[0]
@@ -187,20 +158,13 @@ ticker = selected.split(" — ")[0]
 # Company heading
 # ==========================================================
 
-company_name = companies.loc[
-    companies["ticker"] == ticker,
-    "company_name"
-].iloc[0]
+company_name = companies.loc[companies["ticker"] == ticker, "company_name"].iloc[0]
 
 st.divider()
 
-st.subheader(
-    f"📑 Annual Reports — {company_name}"
-)
+st.subheader(f"📑 Annual Reports — {company_name}")
 
-st.caption(
-    f"NSE Ticker: {ticker}"
-)
+st.caption(f"NSE Ticker: {ticker}")
 
 
 # ==========================================================
@@ -212,9 +176,7 @@ reports = get_reports(ticker)
 
 if reports.empty:
 
-    st.info(
-        "No annual reports are available for this company."
-    )
+    st.info("No annual reports are available for this company.")
 
     st.stop()
 
@@ -223,9 +185,7 @@ if reports.empty:
 # Display reports
 # ==========================================================
 
-st.write(
-    f"**{len(reports)} report(s) found**"
-)
+st.write(f"**{len(reports)} report(s) found**")
 
 
 for row in reports.itertuples(index=False):
@@ -244,26 +204,17 @@ for row in reports.itertuples(index=False):
 
             clean_url = str(url).strip()
 
-            if clean_url.startswith(
-                ("http://", "https://")
-            ):
+            if clean_url.startswith(("http://", "https://")):
 
-                st.link_button(
-                    "📄 Open BSE Annual Report",
-                    clean_url
-                )
+                st.link_button("📄 Open BSE Annual Report", clean_url)
 
             else:
 
-                st.markdown(
-                    "🔴 **Report unavailable**"
-                )
+                st.markdown("🔴 **Report unavailable**")
 
         else:
 
-            st.markdown(
-                "🔴 **Report unavailable**"
-            )
+            st.markdown("🔴 **Report unavailable**")
 
     with col3:
 

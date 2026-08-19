@@ -1,16 +1,15 @@
-
 from src.etl.normaliser import (
-    normalize_year,
-    normalize_ticker,
     clean_text,
+    normalize_ticker,
+    normalize_year,
     remove_commas,
     to_float,
 )
 
-
 # ==========================
 # normalize_year() - 20 Tests
 # ==========================
+
 
 def test_year_01():
     assert normalize_year("FY20") == 2020
@@ -96,6 +95,7 @@ def test_year_20():
 # normalize_ticker() - 15 Tests
 # ==========================
 
+
 def test_ticker_01():
     assert normalize_ticker("TCS.NS") == "TCS"
 
@@ -159,6 +159,7 @@ def test_ticker_15():
 # ==========================
 # Helper Function Tests
 # ==========================
+
 
 def test_clean_text():
     assert clean_text(" Hello   World ") == "Hello World"

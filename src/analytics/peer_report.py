@@ -3,8 +3,7 @@ import sqlite3
 
 import pandas as pd
 from openpyxl import load_workbook
-from openpyxl.styles import PatternFill, Font, Alignment
-
+from openpyxl.styles import Alignment, Font, PatternFill
 
 DB_PATH = "data/db/nifty100.db"
 OUTPUT_FILE = "output/peer_comparison.xlsx"
@@ -84,7 +83,9 @@ LOWER_IS_BETTER = {
 # Calculate percentile rank
 # ==========================================================
 
+
 def calculate_percentile(series, inverse=False):
+    "Calculate percentile."
 
     values = pd.to_numeric(
         series,
@@ -255,8 +256,7 @@ if __name__ == "__main__":
     )
 
     ratios = (
-        ratios
-        .sort_values(
+        ratios.sort_values(
             ["company_id", "_year_num"],
             ascending=[True, False],
         )
@@ -281,16 +281,12 @@ if __name__ == "__main__":
         errors="coerce",
     )
 
-    market = (
-        market
-        .sort_values(
-            ["company_id", "_year_num"],
-            ascending=[True, False],
-        )
-        .drop_duplicates(
-            "company_id",
-            keep="first",
-        )
+    market = market.sort_values(
+        ["company_id", "_year_num"],
+        ascending=[True, False],
+    ).drop_duplicates(
+        "company_id",
+        keep="first",
     )
 
     ratios = ratios.merge(
@@ -316,16 +312,12 @@ if __name__ == "__main__":
         errors="coerce",
     )
 
-    pnl = (
-        pnl
-        .sort_values(
-            ["company_id", "_year_num"],
-            ascending=[True, False],
-        )
-        .drop_duplicates(
-            "company_id",
-            keep="first",
-        )
+    pnl = pnl.sort_values(
+        ["company_id", "_year_num"],
+        ascending=[True, False],
+    ).drop_duplicates(
+        "company_id",
+        keep="first",
     )
 
     ratios = ratios.merge(
@@ -373,14 +365,12 @@ if __name__ == "__main__":
             errors="coerce",
         )
 
-        ratios[f"{metric}_percentile"] = (
-            ratios
-            .groupby("peer_group_name", group_keys=False)[metric]
-            .transform(
-                lambda x: calculate_percentile(
-                    x,
-                    inverse=metric in LOWER_IS_BETTER,
-                )
+        ratios[f"{metric}_percentile"] = ratios.groupby(
+            "peer_group_name", group_keys=False
+        )[metric].transform(
+            lambda x, metric=metric: calculate_percentile(
+                x,
+                inverse=metric in LOWER_IS_BETTER,
             )
         )
 
@@ -393,15 +383,9 @@ if __name__ == "__main__":
         engine="openpyxl",
     )
 
-    groups = sorted(
-        ratios["peer_group_name"]
-        .dropna()
-        .unique()
-    )
+    groups = sorted(ratios["peer_group_name"].dropna().unique())
 
-    print(
-        f"\nPeer groups found: {len(groups)}"
-    )
+    print(f"\nPeer groups found: {len(groups)}")
 
     # ======================================================
     # Create one sheet per peer group
@@ -409,28 +393,20 @@ if __name__ == "__main__":
 
     for group in groups:
 
-        sheet = ratios[
-            ratios["peer_group_name"] == group
-        ].copy()
+        sheet = ratios[ratios["peer_group_name"] == group].copy()
 
         # --------------------------------------------------
         # Sort benchmark first, then company
         # --------------------------------------------------
 
-        sheet["_benchmark_sort"] = (
-            ~sheet["is_benchmark"].astype(bool)
-        )
+        sheet["_benchmark_sort"] = ~sheet["is_benchmark"].astype(bool)
 
-        sheet = (
-            sheet
-            .sort_values(
-                [
-                    "_benchmark_sort",
-                    "company_id",
-                ]
-            )
-            .drop(columns="_benchmark_sort")
-        )
+        sheet = sheet.sort_values(
+            [
+                "_benchmark_sort",
+                "company_id",
+            ]
+        ).drop(columns="_benchmark_sort")
 
         # --------------------------------------------------
         # Select required columns
@@ -445,23 +421,14 @@ if __name__ == "__main__":
         output_columns += METRICS
 
         # Percentile rank for every metric
-        percentile_columns = [
-            f"{metric}_percentile"
-            for metric in METRICS
-        ]
+        percentile_columns = [f"{metric}_percentile" for metric in METRICS]
 
         output_columns += percentile_columns
 
         # Benchmark flag is needed internally for formatting
         output_columns += ["is_benchmark"]
 
-        output = sheet[
-            [
-                col
-                for col in output_columns
-                if col in sheet.columns
-            ]
-        ].copy()
+        output = sheet[[col for col in output_columns if col in sheet.columns]].copy()
 
         # --------------------------------------------------
         # Write sheet
@@ -473,10 +440,7 @@ if __name__ == "__main__":
             index=False,
         )
 
-        print(
-            f"Created sheet: {group} "
-            f"({len(output)} companies)"
-        )
+        print(f"Created sheet: {group} " f"({len(output)} companies)")
 
     writer.close()
 
@@ -484,16 +448,11 @@ if __name__ == "__main__":
     # Format workbook
     # ======================================================
 
-    wb = load_workbook(
-        OUTPUT_FILE
-    )
+    wb = load_workbook(OUTPUT_FILE)
 
     for ws in wb.worksheets:
 
-        headers = [
-            cell.value
-            for cell in ws[1]
-        ]
+        headers = [cell.value for cell in ws[1]]
 
         # --------------------------------------------------
         # Freeze header
@@ -507,13 +466,9 @@ if __name__ == "__main__":
 
         for cell in ws[1]:
 
-            cell.font = Font(
-                bold=True
-            )
+            cell.font = Font(bold=True)
 
-            cell.alignment = Alignment(
-                horizontal="center"
-            )
+            cell.alignment = Alignment(horizontal="center")
 
         # --------------------------------------------------
         # Find benchmark column
@@ -521,11 +476,7 @@ if __name__ == "__main__":
 
         if "is_benchmark" in headers:
 
-            benchmark_col = (
-                headers.index(
-                    "is_benchmark"
-                ) + 1
-            )
+            benchmark_col = headers.index("is_benchmark") + 1
 
         else:
 
@@ -545,12 +496,7 @@ if __name__ == "__main__":
                 col,
             ).value
 
-            if (
-                header is None
-                or not str(header).endswith(
-                    "_percentile"
-                )
-            ):
+            if header is None or not str(header).endswith("_percentile"):
                 continue
 
             for row in range(
@@ -631,17 +577,13 @@ if __name__ == "__main__":
                         ws.cell(
                             row,
                             col,
-                        ).font = Font(
-                            bold=True
-                        )
+                        ).font = Font(bold=True)
 
         # --------------------------------------------------
         # Add peer median row
         # --------------------------------------------------
 
-        median_row = (
-            ws.max_row + 2
-        )
+        median_row = ws.max_row + 2
 
         ws.cell(
             median_row,
@@ -651,9 +593,7 @@ if __name__ == "__main__":
         ws.cell(
             median_row,
             1,
-        ).font = Font(
-            bold=True
-        )
+        ).font = Font(bold=True)
 
         # Find metric columns
         for metric in METRICS:
@@ -661,9 +601,7 @@ if __name__ == "__main__":
             if metric not in headers:
                 continue
 
-            col = (
-                headers.index(metric) + 1
-            )
+            col = headers.index(metric) + 1
 
             values = []
 
@@ -680,9 +618,7 @@ if __name__ == "__main__":
                 if value is not None:
 
                     try:
-                        values.append(
-                            float(value)
-                        )
+                        values.append(float(value))
                     except (
                         TypeError,
                         ValueError,
@@ -695,9 +631,7 @@ if __name__ == "__main__":
                     median_row,
                     col,
                 ).value = round(
-                    pd.Series(
-                        values
-                    ).median(),
+                    pd.Series(values).median(),
                     2,
                 )
 
@@ -713,9 +647,7 @@ if __name__ == "__main__":
             ws.cell(
                 median_row,
                 col,
-            ).font = Font(
-                bold=True
-            )
+            ).font = Font(bold=True)
 
         # --------------------------------------------------
         # Column widths
@@ -725,10 +657,7 @@ if __name__ == "__main__":
 
             max_length = 0
 
-            column_letter = (
-                column_cells[0]
-                .column_letter
-            )
+            column_letter = column_cells[0].column_letter
 
             for cell in column_cells:
 
@@ -739,9 +668,7 @@ if __name__ == "__main__":
                         len(str(cell.value)),
                     )
 
-            ws.column_dimensions[
-                column_letter
-            ].width = min(
+            ws.column_dimensions[column_letter].width = min(
                 max(max_length + 2, 12),
                 28,
             )
@@ -750,19 +677,13 @@ if __name__ == "__main__":
     # Save final workbook
     # ------------------------------------------------------
 
-    wb.save(
-        OUTPUT_FILE
-    )
+    wb.save(OUTPUT_FILE)
 
     print("\n" + "=" * 70)
     print("Peer comparison report created successfully.")
     print("=" * 70)
-    print(
-        f"Output: {OUTPUT_FILE}"
-    )
-    print(
-        f"Sheets created: {len(wb.sheetnames)}"
-    )
+    print(f"Output: {OUTPUT_FILE}")
+    print(f"Sheets created: {len(wb.sheetnames)}")
     print(
         "Sheets:",
         ", ".join(wb.sheetnames),

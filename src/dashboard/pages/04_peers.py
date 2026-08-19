@@ -2,9 +2,8 @@ import sqlite3
 
 import numpy as np
 import pandas as pd
-import streamlit as st
 import plotly.graph_objects as go
-
+import streamlit as st
 
 # ============================================================
 # PAGE TITLE
@@ -27,6 +26,7 @@ DB_PATH = "data/db/nifty100.db"
 
 @st.cache_data(ttl=600)
 def load_peer_data():
+    "Load peer data."
 
     conn = sqlite3.connect(DB_PATH)
 
@@ -82,16 +82,9 @@ if df.empty:
 # CLEAN YEAR
 # ============================================================
 
-df["year_number"] = (
-    df["year"]
-    .astype(str)
-    .str.extract(r"(\d{4})")[0]
-)
+df["year_number"] = df["year"].astype(str).str.extract(r"(\d{4})")[0]
 
-df["year_number"] = pd.to_numeric(
-    df["year_number"],
-    errors="coerce"
-)
+df["year_number"] = pd.to_numeric(df["year_number"], errors="coerce")
 
 
 # ============================================================
@@ -99,14 +92,8 @@ df["year_number"] = pd.to_numeric(
 # ============================================================
 
 df = (
-    df
-    .sort_values(
-        ["company_id", "year_number"]
-    )
-    .drop_duplicates(
-        subset=["peer_group_name", "company_id"],
-        keep="last"
-    )
+    df.sort_values(["company_id", "year_number"])
+    .drop_duplicates(subset=["peer_group_name", "company_id"], keep="last")
     .reset_index(drop=True)
 )
 
@@ -117,34 +104,22 @@ df = (
 
 st.sidebar.header("Peer Group")
 
-peer_groups = sorted(
-    df["peer_group_name"]
-    .dropna()
-    .unique()
-    .tolist()
-)
+peer_groups = sorted(df["peer_group_name"].dropna().unique().tolist())
 
 
-selected_group = st.sidebar.selectbox(
-    "Select Peer Group",
-    peer_groups
-)
+selected_group = st.sidebar.selectbox("Select Peer Group", peer_groups)
 
 
 # ============================================================
 # FILTER SELECTED PEER GROUP
 # ============================================================
 
-group_df = df[
-    df["peer_group_name"] == selected_group
-].copy()
+group_df = df[df["peer_group_name"] == selected_group].copy()
 
 
 if group_df.empty:
 
-    st.warning(
-        "No companies found in the selected peer group."
-    )
+    st.warning("No companies found in the selected peer group.")
 
     st.stop()
 
@@ -154,17 +129,14 @@ if group_df.empty:
 # ============================================================
 
 company_options = (
-    group_df[
-        ["company_id", "company_name"]
-    ]
+    group_df[["company_id", "company_name"]]
     .drop_duplicates()
     .sort_values("company_name")
 )
 
 
 company_labels = {
-    row["company_id"]:
-        f"{row['company_id']} — {row['company_name']}"
+    row["company_id"]: f"{row['company_id']} — {row['company_name']}"
     for _, row in company_options.iterrows()
 }
 
@@ -172,7 +144,7 @@ company_labels = {
 selected_company = st.selectbox(
     "Select Company",
     company_options["company_id"].tolist(),
-    format_func=lambda x: company_labels.get(x, x)
+    format_func=lambda x: company_labels.get(x, x),
 )
 
 
@@ -180,16 +152,12 @@ selected_company = st.selectbox(
 # SELECTED COMPANY DATA
 # ============================================================
 
-company_df = group_df[
-    group_df["company_id"] == selected_company
-].copy()
+company_df = group_df[group_df["company_id"] == selected_company].copy()
 
 
 if company_df.empty:
 
-    st.warning(
-        "Selected company data is not available."
-    )
+    st.warning("Selected company data is not available.")
 
     st.stop()
 
@@ -203,15 +171,11 @@ company_row = company_df.iloc[0]
 
 st.markdown("---")
 
-st.subheader(
-    f"{company_row['company_name']} ({selected_company})"
-)
+st.subheader(f"{company_row['company_name']} ({selected_company})")
 
 if company_row["is_benchmark"] == 1:
 
-    st.success(
-        "⭐ This company is the benchmark company for this peer group."
-    )
+    st.success("⭐ This company is the benchmark company for this peer group.")
 
 
 # ============================================================
@@ -236,10 +200,7 @@ metric_columns = {
 
 for column in metric_columns.values():
 
-    group_df[column] = pd.to_numeric(
-        group_df[column],
-        errors="coerce"
-    )
+    group_df[column] = pd.to_numeric(group_df[column], errors="coerce")
 
 
 # ============================================================
@@ -251,9 +212,7 @@ peer_average = {}
 for metric_name, column_name in metric_columns.items():
 
     peer_average[metric_name] = (
-        group_df[column_name]
-        .replace([np.inf, -np.inf], np.nan)
-        .mean()
+        group_df[column_name].replace([np.inf, -np.inf], np.nan).mean()
     )
 
 
@@ -266,8 +225,7 @@ company_values = {}
 for metric_name, column_name in metric_columns.items():
 
     company_values[metric_name] = pd.to_numeric(
-        company_row[column_name],
-        errors="coerce"
+        company_row[column_name], errors="coerce"
     )
 
 
@@ -277,9 +235,7 @@ for metric_name, column_name in metric_columns.items():
 
 st.markdown("---")
 
-st.subheader(
-    "📡 Company vs Peer Group Average"
-)
+st.subheader("📡 Company vs Peer Group Average")
 
 
 categories = list(metric_columns.keys())
@@ -308,13 +264,9 @@ for category in categories:
 # Close the radar polygons
 categories_closed = categories + [categories[0]]
 
-company_radar_closed = (
-    company_radar + [company_radar[0]]
-)
+company_radar_closed = company_radar + [company_radar[0]]
 
-peer_radar_closed = (
-    peer_radar + [peer_radar[0]]
-)
+peer_radar_closed = peer_radar + [peer_radar[0]]
 
 
 fig = go.Figure()
@@ -325,36 +277,25 @@ fig.add_trace(
         r=company_radar_closed,
         theta=categories_closed,
         fill="toself",
-        name=selected_company
+        name=selected_company,
     )
 )
 
 
 fig.add_trace(
     go.Scatterpolar(
-        r=peer_radar_closed,
-        theta=categories_closed,
-        fill="toself",
-        name="Peer Average"
+        r=peer_radar_closed, theta=categories_closed, fill="toself", name="Peer Average"
     )
 )
 
 
 fig.update_layout(
-    polar=dict(
-        radialaxis=dict(
-            visible=True
-        )
-    ),
+    polar={"radialaxis": {"visible": True}},
     showlegend=True,
-    height=600
+    height=600,
 )
 
-
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
+st.plotly_chart(fig, use_container_width=True)
 
 
 # ============================================================
@@ -363,9 +304,7 @@ st.plotly_chart(
 
 st.markdown("---")
 
-st.subheader(
-    f"📊 {selected_group} — Company Comparison"
-)
+st.subheader(f"📊 {selected_group} — Company Comparison")
 
 
 table_columns = [
@@ -383,16 +322,10 @@ table_columns = [
 ]
 
 
-available_columns = [
-    column
-    for column in table_columns
-    if column in group_df.columns
-]
+available_columns = [column for column in table_columns if column in group_df.columns]
 
 
-comparison_df = group_df[
-    available_columns
-].copy()
+comparison_df = group_df[available_columns].copy()
 
 
 comparison_df = comparison_df.rename(
@@ -416,46 +349,28 @@ comparison_df = comparison_df.rename(
 # FORMAT BENCHMARK
 # ============================================================
 
-comparison_df["Benchmark"] = comparison_df[
-    "Benchmark"
-].map(
-    {
-        1: "⭐ Benchmark",
-        0: ""
-    }
-)
+comparison_df["Benchmark"] = comparison_df["Benchmark"].map({1: "⭐ Benchmark", 0: ""})
 
 
 # ============================================================
 # DISPLAY TABLE
 # ============================================================
 
+
 def highlight_benchmark(row):
+    "Highlight benchmark."
 
     if row["Benchmark"] == "⭐ Benchmark":
 
-        return [
-            "background-color: #FFF2CC"
-            for _ in row
-        ]
+        return ["background-color: #FFF2CC" for _ in row]
 
-    return [
-        ""
-        for _ in row
-    ]
+    return ["" for _ in row]
 
 
-styled_df = comparison_df.style.apply(
-    highlight_benchmark,
-    axis=1
-)
+styled_df = comparison_df.style.apply(highlight_benchmark, axis=1)
 
 
-st.dataframe(
-    styled_df,
-    use_container_width=True,
-    hide_index=True
-)
+st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
 
 # ============================================================
@@ -464,7 +379,4 @@ st.dataframe(
 
 st.markdown("---")
 
-st.caption(
-    f"Peer group: {selected_group} | "
-    f"Companies: {len(comparison_df)}"
-)
+st.caption(f"Peer group: {selected_group} | " f"Companies: {len(comparison_df)}")

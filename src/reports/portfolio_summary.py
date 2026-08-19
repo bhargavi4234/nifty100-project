@@ -18,26 +18,24 @@ Arrow logic:
 For D/E, a decrease is considered an improvement.
 """
 
-from pathlib import Path
 import re
 import sqlite3
+from pathlib import Path
 
 import pandas as pd
-
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate,
+    PageBreak,
     Paragraph,
+    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
-    PageBreak,
 )
-
 
 # ============================================================
 # PATHS
@@ -106,7 +104,9 @@ KPI_CONFIG = [
 # DATABASE
 # ============================================================
 
+
 def get_connection():
+    "Get connection."
     return sqlite3.connect(DB_PATH)
 
 
@@ -136,7 +136,9 @@ def extract_year(value):
 # COMPANY LIST
 # ============================================================
 
+
 def load_companies():
+    "Load companies."
 
     con = get_connection()
 
@@ -169,21 +171,18 @@ def load_companies():
         how="left",
     )
 
-    df["sector"] = (
-        df["sector"]
-        .fillna("Unknown")
-    )
+    df["sector"] = df["sector"].fillna("Unknown")
 
-    return df.sort_values(
-        "company_id"
-    ).reset_index(drop=True)
+    return df.sort_values("company_id").reset_index(drop=True)
 
 
 # ============================================================
 # LOAD RATIO HISTORY
 # ============================================================
 
+
 def load_ratio_history(company_id):
+    "Load ratio history."
 
     con = get_connection()
 
@@ -191,12 +190,7 @@ def load_ratio_history(company_id):
         "year",
     ]
 
-    columns.extend(
-        [
-            config["column"]
-            for config in KPI_CONFIG
-        ]
-    )
+    columns.extend([config["column"] for config in KPI_CONFIG])
 
     query = f"""
         SELECT
@@ -216,32 +210,20 @@ def load_ratio_history(company_id):
     if df.empty:
         return df
 
-    df["parsed_year"] = df["year"].apply(
-        extract_year
-    )
+    df["parsed_year"] = df["year"].apply(extract_year)
 
-    df = df[
-        df["parsed_year"].notna()
-    ].copy()
+    df = df[df["parsed_year"].notna()].copy()
 
-    df["parsed_year"] = (
-        df["parsed_year"]
-        .astype(int)
-    )
+    df["parsed_year"] = df["parsed_year"].astype(int)
 
     # One record per year.
     #
     # Your database contains some duplicate financial-ratio
     # rows, so keeping the last row prevents duplicate years
     # from affecting the trend calculation.
-    df = (
-        df.sort_values(
-            ["parsed_year"]
-        )
-        .drop_duplicates(
-            subset=["parsed_year"],
-            keep="last",
-        )
+    df = df.sort_values(["parsed_year"]).drop_duplicates(
+        subset=["parsed_year"],
+        keep="last",
     )
 
     return df
@@ -251,7 +233,9 @@ def load_ratio_history(company_id):
 # FORMAT VALUE
 # ============================================================
 
+
 def format_value(value, suffix):
+    "Format value."
 
     if value is None:
         return "N/A"
@@ -265,7 +249,7 @@ def format_value(value, suffix):
 
         return f"{number:.2f}{suffix}"
 
-    except Exception:
+    except (TypeError, ValueError):
 
         return "N/A"
 
@@ -273,6 +257,7 @@ def format_value(value, suffix):
 # ============================================================
 # TREND CALCULATION
 # ============================================================
+
 
 def trend_arrow(
     previous,
@@ -300,7 +285,7 @@ def trend_arrow(
         previous = float(previous)
         latest = float(latest)
 
-    except Exception:
+    except (TypeError, ValueError):
 
         return "→"
 
@@ -321,10 +306,7 @@ def trend_arrow(
 
         return "↓"
 
-    relative_change = abs(
-        (latest - previous)
-        / abs(previous)
-    ) * 100
+    relative_change = abs((latest - previous) / abs(previous)) * 100
 
     # Flat within 2%.
     if relative_change <= 2:
@@ -353,10 +335,12 @@ def trend_arrow(
 # KPI TABLE
 # ============================================================
 
+
 def build_kpi_table(
     latest_row,
     previous_row,
 ):
+    "Build kpi table."
 
     rows = [
         [
@@ -383,17 +367,9 @@ def build_kpi_table(
 
         column = config["column"]
 
-        latest = (
-            latest_row[column]
-            if latest_row is not None
-            else None
-        )
+        latest = latest_row[column] if latest_row is not None else None
 
-        previous = (
-            previous_row[column]
-            if previous_row is not None
-            else None
-        )
+        previous = previous_row[column] if previous_row is not None else None
 
         arrow = trend_arrow(
             previous,
@@ -446,9 +422,7 @@ def build_kpi_table(
                     "BACKGROUND",
                     (0, 0),
                     (-1, 0),
-                    colors.HexColor(
-                        "#17365D"
-                    ),
+                    colors.HexColor("#17365D"),
                 ),
                 (
                     "TEXTCOLOR",
@@ -461,9 +435,7 @@ def build_kpi_table(
                     (0, 0),
                     (-1, -1),
                     0.5,
-                    colors.HexColor(
-                        "#B7B7B7"
-                    ),
+                    colors.HexColor("#B7B7B7"),
                 ),
                 (
                     "VALIGN",
@@ -512,18 +484,18 @@ def build_kpi_table(
 # PAGE HEADER
 # ============================================================
 
+
 def draw_header(
     canvas,
     doc,
 ):
+    "Draw header."
 
     canvas.saveState()
 
     width, height = A4
 
-    canvas.setFillColor(
-        colors.HexColor("#17365D")
-    )
+    canvas.setFillColor(colors.HexColor("#17365D"))
 
     canvas.rect(
         0,
@@ -534,9 +506,7 @@ def draw_header(
         stroke=0,
     )
 
-    canvas.setFillColor(
-        colors.HexColor("#666666")
-    )
+    canvas.setFillColor(colors.HexColor("#666666"))
 
     canvas.setFont(
         "Helvetica",
@@ -556,22 +526,20 @@ def draw_header(
 # COMPANY PAGE
 # ============================================================
 
+
 def build_company_page(
     story,
     company,
 ):
+    "Build company page."
 
     company_id = company["company_id"]
 
-    company_name = company[
-        "company_name"
-    ]
+    company_name = company["company_name"]
 
     sector = company["sector"]
 
-    history = load_ratio_history(
-        company_id
-    )
+    history = load_ratio_history(company_id)
 
     # --------------------------------------------------------
     # Company title
@@ -593,8 +561,7 @@ def build_company_page(
 
     story.append(
         Paragraph(
-            f"Ticker: {company_id} &nbsp;&nbsp; "
-            f"| &nbsp;&nbsp; Sector: {sector}",
+            f"Ticker: {company_id} &nbsp;&nbsp; " f"| &nbsp;&nbsp; Sector: {sector}",
             SUBTITLE_STYLE,
         )
     )
@@ -621,27 +588,15 @@ def build_company_page(
 
         return
 
-    history = history.sort_values(
-        "parsed_year"
-    )
+    history = history.sort_values("parsed_year")
 
     latest_row = history.iloc[-1]
 
-    previous_row = (
-        history.iloc[-2]
-        if len(history) >= 2
-        else None
-    )
+    previous_row = history.iloc[-2] if len(history) >= 2 else None
 
-    latest_year = latest_row[
-        "parsed_year"
-    ]
+    latest_year = latest_row["parsed_year"]
 
-    previous_year = (
-        previous_row["parsed_year"]
-        if previous_row is not None
-        else "N/A"
-    )
+    previous_year = previous_row["parsed_year"] if previous_row is not None else "N/A"
 
     story.append(
         Paragraph(
@@ -734,18 +689,14 @@ def build_company_page(
                     "BACKGROUND",
                     (0, 0),
                     (-1, -1),
-                    colors.HexColor(
-                        "#F2F2F2"
-                    ),
+                    colors.HexColor("#F2F2F2"),
                 ),
                 (
                     "BOX",
                     (0, 0),
                     (-1, -1),
                     0.5,
-                    colors.HexColor(
-                        "#B7B7B7"
-                    ),
+                    colors.HexColor("#B7B7B7"),
                 ),
                 (
                     "VALIGN",
@@ -796,8 +747,7 @@ def build_company_page(
 
     story.append(
         Paragraph(
-            f"Financial history available: "
-            f"<b>{len(history)} years</b>",
+            f"Financial history available: " f"<b>{len(history)} years</b>",
             BODY_STYLE,
         )
     )
@@ -816,9 +766,7 @@ COMPANY_TITLE_STYLE = ParagraphStyle(
     fontSize=20,
     leading=24,
     alignment=TA_LEFT,
-    textColor=colors.HexColor(
-        "#17365D"
-    ),
+    textColor=colors.HexColor("#17365D"),
 )
 
 SUBTITLE_STYLE = ParagraphStyle(
@@ -826,9 +774,7 @@ SUBTITLE_STYLE = ParagraphStyle(
     parent=styles["Normal"],
     fontSize=10,
     leading=13,
-    textColor=colors.HexColor(
-        "#555555"
-    ),
+    textColor=colors.HexColor("#555555"),
 )
 
 YEAR_STYLE = ParagraphStyle(
@@ -843,9 +789,7 @@ SECTION_STYLE = ParagraphStyle(
     parent=styles["Heading2"],
     fontSize=13,
     leading=16,
-    textColor=colors.HexColor(
-        "#17365D"
-    ),
+    textColor=colors.HexColor("#17365D"),
 )
 
 BODY_STYLE = ParagraphStyle(
@@ -875,7 +819,9 @@ ARROW_STYLE = ParagraphStyle(
 # GENERATE PDF
 # ============================================================
 
+
 def generate_portfolio_summary():
+    "Generate portfolio summary."
 
     OUTPUT_DIR.mkdir(
         parents=True,
@@ -911,14 +857,9 @@ def generate_portfolio_summary():
 
     story = []
 
-    for index, (_, company) in enumerate(
-        companies.iterrows()
-    ):
+    for index, (_, company) in enumerate(companies.iterrows()):
 
-        print(
-            f"{index + 1:>3}/{len(companies)} "
-            f"{company['company_id']}"
-        )
+        print(f"{index + 1:>3}/{len(companies)} " f"{company['company_id']}")
 
         build_company_page(
             story,
@@ -927,9 +868,7 @@ def generate_portfolio_summary():
 
         if index < len(companies) - 1:
 
-            story.append(
-                PageBreak()
-            )
+            story.append(PageBreak())
 
     doc.build(
         story,
@@ -953,9 +892,7 @@ def generate_portfolio_summary():
     )
 
     print()
-    print(
-        "STATUS: Portfolio summary generated."
-    )
+    print("STATUS: Portfolio summary generated.")
 
     return OUTPUT_FILE
 

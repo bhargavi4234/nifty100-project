@@ -3,11 +3,10 @@ import sqlite3
 
 import pandas as pd
 import yaml
-
-from .engine import apply_filters
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 
+from .engine import apply_filters
 
 # ==========================================================
 # Configuration
@@ -35,6 +34,7 @@ PRESETS = load_presets()
 # Run Preset
 # ==========================================================
 
+
 def run_preset(df, preset_name):
     """
     Apply a predefined screener preset.
@@ -46,18 +46,11 @@ def run_preset(df, preset_name):
     if preset_name not in PRESETS:
         raise ValueError(f"Unknown preset: {preset_name}")
 
-    result = apply_filters(
-        df,
-        PRESETS[preset_name]
-    )
+    result = apply_filters(df, PRESETS[preset_name])
 
     # Keep the best 50 results
     result = (
-        result
-        .sort_values(
-            by="composite_quality_score",
-            ascending=False
-        )
+        result.sort_values(by="composite_quality_score", ascending=False)
         .head(MAX_RESULTS)
         .reset_index(drop=True)
     )
@@ -71,9 +64,7 @@ def run_preset(df, preset_name):
 
 if __name__ == "__main__":
 
-    conn = sqlite3.connect(
-        "data/db/nifty100.db"
-    )
+    conn = sqlite3.connect("data/db/nifty100.db")
 
     query = """
     SELECT
@@ -105,22 +96,13 @@ if __name__ == "__main__":
         ON fr.company_id = s.company_id
     """
 
-    df = pd.read_sql(
-        query,
-        conn
-    )
+    df = pd.read_sql(query, conn)
 
     conn.close()
 
-    os.makedirs(
-        "output",
-        exist_ok=True
-    )
+    os.makedirs("output", exist_ok=True)
 
-    writer = pd.ExcelWriter(
-        OUTPUT_FILE,
-        engine="openpyxl"
-    )
+    writer = pd.ExcelWriter(OUTPUT_FILE, engine="openpyxl")
 
     print("=" * 70)
     print("Financial Screener Presets")
@@ -154,40 +136,18 @@ if __name__ == "__main__":
         print("\n" + "=" * 70)
         print(f"Testing: {preset_name}")
 
-        result = run_preset(
-            df,
-            preset_name
-        )
+        result = run_preset(df, preset_name)
 
-        available = [
-            c for c in columns
-            if c in result.columns
-        ]
+        available = [c for c in columns if c in result.columns]
 
-        result[available].to_excel(
-            writer,
-            sheet_name=preset_name[:31],
-            index=False
-        )
+        result[available].to_excel(writer, sheet_name=preset_name[:31], index=False)
 
-        print(
-            f"Preset   : {preset_name}"
-        )
+        print(f"Preset   : {preset_name}")
 
-        print(
-            f"Companies: {len(result)}"
-        )
+        print(f"Companies: {len(result)}")
 
         if len(result) > 0:
-            print(
-                result[
-                    [
-                        "company_id",
-                        "year",
-                        "composite_quality_score"
-                    ]
-                ].head(5)
-            )
+            print(result[["company_id", "year", "composite_quality_score"]].head(5))
         else:
             print("No companies matched.")
 
@@ -198,21 +158,11 @@ if __name__ == "__main__":
 # Colour-code workbook
 # ==========================================================
 
-wb = load_workbook(
-    OUTPUT_FILE
-)
+wb = load_workbook(OUTPUT_FILE)
 
-green = PatternFill(
-    fill_type="solid",
-    start_color="C6EFCE",
-    end_color="C6EFCE"
-)
+green = PatternFill(fill_type="solid", start_color="C6EFCE", end_color="C6EFCE")
 
-red = PatternFill(
-    fill_type="solid",
-    start_color="FFC7CE",
-    end_color="FFC7CE"
-)
+red = PatternFill(fill_type="solid", start_color="FFC7CE", end_color="FFC7CE")
 
 
 metric_columns = {
@@ -237,10 +187,7 @@ for sheet in wb.sheetnames:
 
     preset = PRESETS[sheet]
 
-    headers = [
-        cell.value
-        for cell in ws[1]
-    ]
+    headers = [cell.value for cell in ws[1]]
 
     for col_name, filter_name in metric_columns.items():
 
@@ -251,21 +198,13 @@ for sheet in wb.sheetnames:
         ):
             continue
 
-        col = (
-            headers.index(col_name) + 1
-        )
+        col = headers.index(col_name) + 1
 
         threshold = preset[filter_name]
 
-        for row in range(
-            2,
-            ws.max_row + 1
-        ):
+        for row in range(2, ws.max_row + 1):
 
-            value = ws.cell(
-                row,
-                col
-            ).value
+            value = ws.cell(row, col).value
 
             if value is None:
                 continue
@@ -278,28 +217,16 @@ for sheet in wb.sheetnames:
             if filter_name.endswith("_max"):
 
                 if value <= threshold:
-                    ws.cell(
-                        row,
-                        col
-                    ).fill = green
+                    ws.cell(row, col).fill = green
                 else:
-                    ws.cell(
-                        row,
-                        col
-                    ).fill = red
+                    ws.cell(row, col).fill = red
 
             else:
 
                 if value >= threshold:
-                    ws.cell(
-                        row,
-                        col
-                    ).fill = green
+                    ws.cell(row, col).fill = green
                 else:
-                    ws.cell(
-                        row,
-                        col
-                    ).fill = red
+                    ws.cell(row, col).fill = red
 
 
 wb.save(OUTPUT_FILE)

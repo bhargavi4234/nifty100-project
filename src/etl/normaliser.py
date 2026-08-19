@@ -1,8 +1,10 @@
 import re
+
 import pandas as pd
 
 
 def normalize_year(year):
+    "Normalize year."
     if pd.isna(year):
         return None
 
@@ -12,8 +14,7 @@ def normalize_year(year):
     if len(year) == 2 and year.isdigit():
         return 2000 + int(year)
 
-    if year.endswith(".0"):
-        year = year[:-2]
+    year = year.removesuffix(".0")
 
     if year.isdigit():
         return int(year)
@@ -22,6 +23,7 @@ def normalize_year(year):
 
 
 def normalize_ticker(ticker):
+    "Normalize ticker."
     if pd.isna(ticker):
         return None
 
@@ -34,6 +36,7 @@ def normalize_ticker(ticker):
 
 
 def clean_text(text):
+    "Clean text."
     if pd.isna(text):
         return None
 
@@ -41,6 +44,7 @@ def clean_text(text):
 
 
 def remove_commas(value):
+    "Remove commas."
     if pd.isna(value):
         return None
 
@@ -48,6 +52,7 @@ def remove_commas(value):
 
 
 def to_float(value):
+    "To float."
     if pd.isna(value):
         return None
 

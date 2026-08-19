@@ -4,7 +4,6 @@ import sqlite3
 import numpy as np
 import pandas as pd
 
-
 # ==========================================================
 # Configuration
 # ==========================================================
@@ -20,6 +19,7 @@ OUTPUT_CSV = "output/valuation_flags.csv"
 # Load market-cap data
 # ==========================================================
 
+
 def load_market_cap():
     """Load market-cap and valuation data from Excel."""
 
@@ -34,20 +34,12 @@ def load_market_cap():
         "ev_ebitda",
     ]
 
-    missing = [
-        col for col in required_columns
-        if col not in df.columns
-    ]
+    missing = [col for col in required_columns if col not in df.columns]
 
     if missing:
-        raise ValueError(
-            f"Missing columns in market_cap.xlsx: {missing}"
-        )
+        raise ValueError(f"Missing columns in market_cap.xlsx: {missing}")
 
-    df["year"] = pd.to_numeric(
-        df["year"],
-        errors="coerce"
-    )
+    df["year"] = pd.to_numeric(df["year"], errors="coerce")
 
     numeric_columns = [
         "market_cap_crore",
@@ -57,10 +49,7 @@ def load_market_cap():
     ]
 
     for col in numeric_columns:
-        df[col] = pd.to_numeric(
-            df[col],
-            errors="coerce"
-        )
+        df[col] = pd.to_numeric(df[col], errors="coerce")
 
     return df
 
@@ -68,6 +57,7 @@ def load_market_cap():
 # ==========================================================
 # Load company / sector / FCF data
 # ==========================================================
+
 
 def load_database_data():
     """Load company names, sectors and FCF data."""
@@ -114,6 +104,7 @@ def load_database_data():
 # Convert financial-ratio year to numeric year
 # ==========================================================
 
+
 def extract_year(value):
     """Extract four-digit year from values such as 'Mar 2024'."""
 
@@ -136,34 +127,29 @@ def extract_year(value):
 # Build valuation dataset
 # ==========================================================
 
+
 def build_valuation_data():
+    "Build valuation data."
 
     market = load_market_cap()
 
     companies, sectors, ratios = load_database_data()
 
     # Convert financial-ratio year
-    ratios["year_num"] = ratios["year"].apply(
-        extract_year
-    )
+    ratios["year_num"] = ratios["year"].apply(extract_year)
 
     # Keep valid FCF values
     ratios["free_cash_flow_cr"] = pd.to_numeric(
-        ratios["free_cash_flow_cr"],
-        errors="coerce"
+        ratios["free_cash_flow_cr"], errors="coerce"
     )
 
     # Latest FCF year for every company
-    ratios = ratios.sort_values(
-        ["company_id", "year_num"]
-    )
+    ratios = ratios.sort_values(["company_id", "year_num"])
 
     latest_fcf = (
-        ratios
-        .dropna(subset=["year_num"])
+        ratios.dropna(subset=["year_num"])
         .groupby("company_id", as_index=False)
-        .tail(1)
-        [
+        .tail(1)[
             [
                 "company_id",
                 "year_num",
@@ -178,21 +164,16 @@ def build_valuation_data():
     )
 
     # Latest market-cap year
-    market = market.sort_values(
-        ["company_id", "year"]
-    )
+    market = market.sort_values(["company_id", "year"])
 
     latest_market = (
-        market
-        .dropna(subset=["year"])
+        market.dropna(subset=["year"])
         .groupby("company_id", as_index=False)
         .tail(1)
         .copy()
     )
 
-    latest_year = int(
-        latest_market["year"].max()
-    )
+    latest_year = int(latest_market["year"].max())
 
     # ======================================================
     # Sector median P/E for latest year
@@ -226,10 +207,7 @@ def build_valuation_data():
     five_year_start = latest_year - 4
 
     five_year_market = market[
-        market["year"].between(
-            five_year_start,
-            latest_year
-        )
+        market["year"].between(five_year_start, latest_year)
     ].copy()
 
     five_year_market = five_year_market.merge(
@@ -299,11 +277,7 @@ def build_valuation_data():
 
     result["FCF_yield_pct"] = np.where(
         result["market_cap_crore"] > 0,
-        (
-            result["free_cash_flow_cr"]
-            / result["market_cap_crore"]
-            * 100
-        ),
+        (result["free_cash_flow_cr"] / result["market_cap_crore"] * 100),
         np.nan,
     )
 
@@ -316,10 +290,7 @@ def build_valuation_data():
     result["PE_vs_sector_median_pct"] = np.where(
         result["latest_sector_median_pe"] > 0,
         (
-            (
-                result["pe_ratio"]
-                - result["latest_sector_median_pe"]
-            )
+            (result["pe_ratio"] - result["latest_sector_median_pe"])
             / result["latest_sector_median_pe"]
         )
         * 100,
@@ -331,6 +302,7 @@ def build_valuation_data():
     # ======================================================
 
     def valuation_flag(row):
+        "Valuation flag."
 
         pe = row["pe_ratio"]
         sector_median = row["latest_sector_median_pe"]
@@ -399,12 +371,11 @@ def build_valuation_data():
 # Export results
 # ==========================================================
 
-def export_valuation():
 
-    os.makedirs(
-        "output",
-        exist_ok=True
-    )
+def export_valuation():
+    "Export valuation."
+
+    os.makedirs("output", exist_ok=True)
 
     result, latest_year = build_valuation_data()
 
@@ -449,11 +420,7 @@ def export_valuation():
 
     print("\nValuation flags:")
 
-    print(
-        result["flag"]
-        .value_counts()
-        .to_string()
-    )
+    print(result["flag"].value_counts().to_string())
 
     print("\nExcel output:")
     print(OUTPUT_XLSX)
@@ -462,11 +429,7 @@ def export_valuation():
     print(OUTPUT_CSV)
 
     print("\nSample results:")
-    print(
-        result.head(10).to_string(
-            index=False
-        )
-    )
+    print(result.head(10).to_string(index=False))
 
     print("=" * 70)
 

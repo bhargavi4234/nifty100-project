@@ -1,7 +1,6 @@
 # NIFTY100 Financial Intelligence Platform
 
-## ## Sprint 1, Sprint 2, Sprint 3, Sprint 4 & Sprint 5 – Data Foundation, Financial Analytics, Peer Analysis, Streamlit Dashboard, Valuation, NLP & Automated Reporting
-
+## Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5 & Sprint 6 – Data Foundation, Financial Analytics, Peer Analysis, Streamlit Dashboard, Valuation, NLP & Automated Reporting
 ### Project Overview
 
 The **NIFTY100 Financial Intelligence Platform** is designed to build a reliable financial analytics platform for NIFTY100 companies. The project extracts financial data from multiple Excel source files, validates it using Data Quality (DQ) rules, stores the validated data in a SQLite database, and generates advanced financial ratios for analytics and company screening.
@@ -39,7 +38,6 @@ By the end of Sprint 2, the project successfully:
 ---
 
 # Project Structure
-
 nifty100_project/
 │
 ├── data/
@@ -48,57 +46,73 @@ nifty100_project/
 │   └── db/
 │       └── nifty100.db
 │
-├── notebooks/
+├── docs/
+│   └── analyst_guide.pdf
 │
 ├── src/
-│   ├── analytics/
-│   │   ├── cashflow_kpis.py
-│   │   └── capital_allocation_report.py
-│   │
 │   ├── etl/
+│   │   ├── ingestion.py
+│   │   ├── normaliser.py
+│   │   ├── validator.py
+│   │   └── loader.py
+│   │
+│   ├── analytics/
+│   │   ├── ratios.py
+│   │   ├── cagr.py
+│   │   ├── cashflow_intelligence.py
+│   │   └── distress_detector.py
+│   │
+│   ├── screener/
+│   │   ├── screener.py
+│   │   └── presets.py
 │   │
 │   ├── nlp/
-│   │   ├── parser.py
+│   │   ├── analyst_guide_parser.py
 │   │   └── pros_cons_generator.py
 │   │
-│   ├── reports/
-│   │   ├── tearsheet.py
-│   │   ├── batch_reports.py
-│   │   └── portfolio_summary.py
-│   │
-│   └── screener/
-│
-├── output/
-│   ├── analysis_parsed.csv
-│   ├── parse_failures.csv
-│   ├── pros_cons_generated.csv
-│   ├── cashflow_intelligence.xlsx
-│   ├── distress_alerts.csv
-│   ├── capital_allocation.csv
-│   ├── capital_allocation_distribution.csv
-│   ├── capital_allocation_verification.csv
-│   ├── pattern_changes.csv
-│   ├── skipped_tearsheets.csv
-│   └── sector_report_summary.csv
-│
-├── reports/
-│   ├── tearsheets/
-│   │   └── *_tearsheet.pdf
-│   │
-│   ├── sector/
-│   │   └── *_report.pdf
-│   │
-│   ├── portfolio/
-│   │   └── portfolio_summary.pdf
-│   │
-│   └── Sprint5_Retrospective.md
+│   └── reports/
+│       ├── generate_tearsheets.py
+│       └── generate_sector_reports.py
 │
 ├── tests/
+│   ├── test_normaliser.py
+│   ├── test_validator.py
+│   ├── test_ratios.py
+│   ├── test_cagr.py
+│   ├── test_cashflow.py
+│   ├── test_analysis_parser.py
+│   ├── test_pros_cons.py
+│   ├── test_cashflow_intelligence.py
+│   └── test_distress.py
 │
-├── README.md
+├── output/
+│   ├── load_audit.csv
+│   ├── validation_failures.csv
+│   ├── screener_output.xlsx
+│   ├── peer_comparison.xlsx
+│   ├── capital_allocation.csv
+│   ├── analysis_parsed.csv
+│   ├── pros_cons_generated.csv
+│   ├── cashflow_intelligence.xlsx
+│   └── distress_alerts.csv
+│
+├── reports/
+│   ├── radar_charts/
+│   ├── tearsheets/
+│   │   └── *.pdf
+│   │
+│   └── sector/
+│       └── *.pdf
+│
+├── config/
+│   └── screener.yaml
+│
+├── notebooks/
+│   └── ...
+│
 ├── requirements.txt
+├── README.md
 └── .gitignore
-
 ---
 
 # Technologies Used
@@ -1318,15 +1332,345 @@ Add missing financial data, improve handling of incomplete company histories, ad
 - **Cash Flow Intelligence:** `cashflow_intelligence.xlsx` contains exactly 92 rows and all required columns.
 - **Sector Report Module:** `src/reports/sector_report.py` was created and successfully tested.
 
+# Sprint 6 – NLP Intelligence, Cash-Flow Intelligence & Automated Reports
+
+## Sprint 6 Overview
+
+Sprint 6 extends the Nifty100 financial analytics platform with document intelligence, NLP-based analysis, cash-flow quality assessment, financial distress detection, and automated reporting.
+
+### Objectives
+
+* Parse the Analyst Guide PDF
+* Extract structured CAGR and analysis data
+* Generate company Pros & Cons
+* Build cash-flow intelligence
+* Detect financial distress signals
+* Generate automated company tear sheets
+* Generate sector-level reports
+* Run Sprint 6 tests
+
+---
+
+# Day 36 – Analyst Guide PDF Parsing
+
+## Objective
+
+Extract useful financial information from the Analyst Guide PDF and convert unstructured text into structured data.
+
+## Tasks
+
+* Read the Analyst Guide PDF using `pypdf`
+* Extract company sections
+* Identify financial analysis text
+* Extract CAGR-related information
+* Normalize extracted values
+* Store structured results in CSV format
+
+## Input
+
+```text
+docs/analyst_guide.pdf
+```
+
+## Run
+
+```powershell
+python src/nlp/analyst_guide_parser.py
+```
+
+## Test
+
+```powershell
+python -m pytest tests/test_analysis_parser.py -v
+```
+
+## Deliverable
+
+```text
+output/analysis_parsed.csv
+```
+
+---
+
+# Day 37 – Automated Pros & Cons Generation
+
+## Objective
+
+Generate structured Pros and Cons for the companies using financial analysis and fundamental data.
+
+## Tasks
+
+* Read company financial data
+* Analyze financial strengths
+* Identify financial risks
+* Generate Pros
+* Generate Cons
+* Standardize the generated results
+* Cover the complete company universe
+
+## Run
+
+```powershell
+python src/nlp/pros_cons_generator.py
+```
+
+## Test
+
+```powershell
+python -m pytest tests/test_pros_cons.py -v
+```
+
+## Deliverable
+
+```text
+output/pros_cons_generated.csv
+```
+
+---
+
+# Day 38 – Cash-Flow Intelligence
+
+## Objective
+
+Analyze the quality and sustainability of company cash flows.
+
+## Tasks
+
+Calculate:
+
+* CFO Quality
+* CFO/PAT
+* Free Cash Flow
+* CapEx Intensity
+* Cash conversion
+* Cash-flow warning signals
+
+## Formulas
+
+```text
+CFO Quality = CFO / PAT
+```
+
+```text
+CapEx Intensity = CapEx / Revenue
+```
+
+```text
+FCF = CFO - CapEx
+```
+
+## Run
+
+```powershell
+python src/analytics/cashflow_intelligence.py
+```
+
+## Test
+
+```powershell
+python -m pytest tests/test_cashflow_intelligence.py -v
+```
+
+## Deliverable
+
+```text
+output/cashflow_intelligence.xlsx
+```
+
+---
+
+# Day 39 – Financial Distress Detection
+
+## Objective
+
+Identify companies showing potential financial distress or deterioration.
+
+## Distress Indicators
+
+* High Debt/Equity
+* Weak Interest Coverage
+* Negative Free Cash Flow
+* Weak CFO/PAT conversion
+* Profit decline
+* Revenue decline
+* EPS decline
+* Persistent financial deterioration
+
+## Distress Scoring
+
+```text
+Debt warning       → +1
+Weak ICR           → +1
+Negative FCF       → +1
+Weak CFO/PAT       → +1
+Profit decline     → +1
+Revenue decline    → +1
+EPS decline        → +1
+```
+
+A higher score indicates a higher level of potential financial risk.
+
+## Run
+
+```powershell
+python src/analytics/distress_detector.py
+```
+
+## Test
+
+```powershell
+python -m pytest tests/test_distress.py -v
+```
+
+## Deliverable
+
+```text
+output/distress_alerts.csv
+```
+
+---
+
+# Day 40 – Automated Company Tear Sheets
+
+## Objective
+
+Generate an automated PDF tear sheet for each company.
+
+## Tear Sheet Contents
+
+Each tear sheet contains:
+
+* Company name
+* Sector
+* Market information
+* Financial ratios
+* Revenue growth
+* Profit growth
+* ROE
+* ROCE
+* Debt/Equity
+* Interest Coverage
+* Cash-flow quality
+* Free Cash Flow
+* Pros
+* Cons
+* Distress indicators
+* Overall financial interpretation
+
+## Run
+
+```powershell
+python src/reports/generate_tearsheets.py
+```
+
+## Deliverable
+
+```text
+reports/tearsheets/
+```
+
+Approximately **92 company PDF reports** are generated.
+
+---
+
+# Day 41 – Sector-Level Reports
+
+## Objective
+
+Aggregate company-level financial intelligence into sector-level reports.
+
+## Sector Report Contents
+
+* Sector overview
+* Company count
+* Financial-ratio summary
+* Growth characteristics
+* Profitability
+* Debt profile
+* Cash-flow quality
+* Distress companies
+* Strong companies
+* Sector-level observations
+
+## Run
+
+```powershell
+python src/reports/generate_sector_reports.py
+```
+
+## Deliverable
+
+```text
+reports/sector/
+```
+
+Approximately **11 sector PDF reports** are generated.
+
+---
+
+# Day 42 – Integration & Final Testing
+
+## Objective
+
+Run the complete Sprint 6 pipeline and ensure all components work together.
+
+## Complete Pipeline
+
+```powershell
+python src/nlp/analyst_guide_parser.py
+python src/nlp/pros_cons_generator.py
+python src/analytics/cashflow_intelligence.py
+python src/analytics/distress_detector.py
+python src/reports/generate_tearsheets.py
+python src/reports/generate_sector_reports.py
+```
+
+## Run Full Test Suite
+
+```powershell
+python -m pytest tests/ -v
+```
+
+## Short Test Summary
+
+```powershell
+python -m pytest tests/ -q
+```
+
+---
+
+# Sprint 6 Deliverables
+
+```text
+output/
+├── pros_cons_generated.csv
+├── analysis_parsed.csv
+├── cashflow_intelligence.xlsx
+└── distress_alerts.csv
+
+reports/
+├── tearsheets/
+│   └── ~92 company PDFs
+│
+└── sector/
+    └── ~11 sector PDFs
+```
+
+---
+sprint-6 status
+**completed**
+
+
 
 ## Author
 
 **Bhargavi**
 
-NIFTY100 Financial Intelligence Platform
+**NIFTY100 Financial Intelligence Platform**
 
-Sprint 1 – Data Foundation & ETL
-
-Sprint 2 – Financial Ratio Engine
-
-Sprint 3 - implemented the financial screener, peer analysis, radar charts, and peer comparison reports.
+- **Sprint 1** – Data Foundation & ETL
+- **Sprint 2** – Financial Ratio Engine
+- **Sprint 3** – Financial Screener, Peer Analysis, Radar Charts & Peer Comparison Reports
+- **Sprint 4** – Streamlit Dashboard & Interactive Financial Analytics
+- **Sprint 5** – Valuation, Advanced Analytics & Financial Intelligence
+- **Sprint 6** – NLP, Cash-Flow Intelligence, Distress Detection & Automated Reporting

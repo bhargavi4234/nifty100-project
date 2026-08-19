@@ -1,6 +1,6 @@
-import yaml
 import numpy as np
 import pandas as pd
+import yaml
 
 
 def load_config(config_path):
@@ -37,6 +37,7 @@ def winsorised_score(series, higher_is_better=True):
 
     return scaled.fillna(0)
 
+
 def compute_quality_score(df):
     """
     Compute weighted composite quality score (0–100).
@@ -67,6 +68,7 @@ def compute_quality_score(df):
     score = pd.Series(0.0, index=df.index)
 
     def metric_score(col, higher_is_better=True):
+        "Metric score."
         if col not in df.columns:
             return pd.Series(0, index=df.index)
 
@@ -93,14 +95,8 @@ def compute_quality_score(df):
     score += metric_score("net_profit_margin_pct") * 0.10
 
     # ---------------- Cash Quality (15%) ----------------
-    if (
-        "cash_from_operations_cr" in df.columns
-        and "net_profit" in df.columns
-    ):
-        ratio = (
-            df["cash_from_operations_cr"]
-            / df["net_profit"].replace(0, np.nan)
-        )
+    if "cash_from_operations_cr" in df.columns and "net_profit" in df.columns:
+        ratio = df["cash_from_operations_cr"] / df["net_profit"].replace(0, np.nan)
 
         ratio = ratio.fillna(0)
 
@@ -117,29 +113,24 @@ def compute_quality_score(df):
         score += ratio_score.fillna(0) * 0.10
 
     if "free_cash_flow_cr" in df.columns:
-        score += (
-            (df["free_cash_flow_cr"] > 0)
-            .astype(int)
-            * 100
-            * 0.05
-        )
+        score += (df["free_cash_flow_cr"] > 0).astype(int) * 100 * 0.05
 
     # ---------------- Growth (20%) ----------------
     score += metric_score("revenue_cagr_5yr") * 0.10
     score += metric_score("pat_cagr_5yr") * 0.10
 
     # ---------------- Leverage (15%) ----------------
-    score += metric_score(
-        "debt_to_equity",
-        higher_is_better=False,
-    ) * 0.10
+    score += (
+        metric_score(
+            "debt_to_equity",
+            higher_is_better=False,
+        )
+        * 0.10
+    )
 
     if "interest_coverage" in df.columns:
 
-        icr = (
-            df["interest_coverage"]
-            .replace("Debt Free", np.inf)
-        )
+        icr = df["interest_coverage"].replace("Debt Free", np.inf)
 
         icr = pd.to_numeric(icr, errors="coerce").fillna(0)
 
@@ -159,25 +150,21 @@ def compute_quality_score(df):
     if "broad_sector" in df.columns:
 
         sector_score = (
-            pd.DataFrame({
-                "score": score,
-                "sector": df["broad_sector"]
-            })
+            pd.DataFrame({"score": score, "sector": df["broad_sector"]})
             .groupby("sector")["score"]
             .transform(
                 lambda x: (
-                    (x - x.min())
-                    / (x.max() - x.min())
-                    * 100
+                    ((x - x.min()) / (x.max() - x.min()) * 100)
+                    if x.max() != x.min()
+                    else 50
                 )
-                if x.max() != x.min()
-                else 50
             )
         )
 
         return sector_score.round(2)
 
     return score.round(2)
+
 
 def apply_filters(df, filters):
     """
@@ -201,14 +188,12 @@ def apply_filters(df, filters):
             na=False,
         )
 
-        result = pd.concat([
-            result[financials],
-            result[
-                (~financials)
-                & (result["debt_to_equity"] <= value)
+        result = pd.concat(
+            [
+                result[financials],
+                result[(~financials) & (result["debt_to_equity"] <= value)],
             ]
-        ]).reset_index(drop=True)
-
+        ).reset_index(drop=True)
 
     # Free Cash Flow
     value = filters.get("fcf_min")
@@ -277,10 +262,8 @@ def apply_filters(df, filters):
     # Dividend Payout Ratio
     value = filters.get("dividend_payout_max")
     if value is not None:
-       result = result[
-           result["dividend_payout_ratio_pct"] <= value
-    ]
-       
+        result = result[result["dividend_payout_ratio_pct"] <= value]
+
     # Sales
     value = filters.get("sales_min")
     if value is not None:
@@ -290,7 +273,7 @@ def apply_filters(df, filters):
     value = filters.get("net_profit_min")
     if value is not None:
         result = result[result["net_profit"] >= value]
-     
+
     # Add quality score
     result["composite_quality_score"] = compute_quality_score(result)
 
@@ -341,10 +324,7 @@ if __name__ == "__main__":
 
     df = pd.read_sql(query, conn)
 
-
-    filters = load_config(
-        "src/screener/screener_config.yaml"
-    )
+    filters = load_config("src/screener/screener_config.yaml")
 
     screened = apply_filters(
         df,

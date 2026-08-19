@@ -14,12 +14,8 @@ The existing batch_reports.py contains:
 """
 
 from batch_reports import (
-    get_sector_data,
-    get_latest_metrics,
-    generate_sector_report,
     generate_sector_reports,
 )
-
 
 if __name__ == "__main__":
     generate_sector_reports()

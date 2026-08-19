@@ -4,7 +4,6 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-
 # ============================================================
 # PAGE TITLE
 # ============================================================
@@ -28,15 +27,15 @@ CAPITAL_FILE = "output/capital_allocation.csv"
 # LOAD CAPITAL ALLOCATION DATA
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def load_capital_data():
+    "Load capital data."
 
     if not os.path.exists(CAPITAL_FILE):
         return pd.DataFrame()
 
-    df = pd.read_csv(
-        CAPITAL_FILE
-    )
+    df = pd.read_csv(CAPITAL_FILE)
 
     return df
 
@@ -50,9 +49,7 @@ df = load_capital_data()
 
 if df.empty:
 
-    st.error(
-        "Capital allocation data is not available."
-    )
+    st.error("Capital allocation data is not available.")
 
     st.stop()
 
@@ -63,23 +60,16 @@ required_columns = [
     "cfo_sign",
     "cfi_sign",
     "cff_sign",
-    "pattern_label"
+    "pattern_label",
 ]
 
 
-missing_columns = [
-    column
-    for column in required_columns
-    if column not in df.columns
-]
+missing_columns = [column for column in required_columns if column not in df.columns]
 
 
 if missing_columns:
 
-    st.error(
-        "Missing columns: "
-        + ", ".join(missing_columns)
-    )
+    st.error("Missing columns: " + ", ".join(missing_columns))
 
     st.stop()
 
@@ -88,16 +78,9 @@ if missing_columns:
 # CLEAN YEAR
 # ============================================================
 
-df["year_number"] = (
-    df["year"]
-    .astype(str)
-    .str.extract(r"(\d{4})")[0]
-)
+df["year_number"] = df["year"].astype(str).str.extract(r"(\d{4})")[0]
 
-df["year_number"] = pd.to_numeric(
-    df["year_number"],
-    errors="coerce"
-)
+df["year_number"] = pd.to_numeric(df["year_number"], errors="coerce")
 
 
 # ============================================================
@@ -105,14 +88,8 @@ df["year_number"] = pd.to_numeric(
 # ============================================================
 
 latest_df = (
-    df
-    .sort_values(
-        ["company_id", "year_number"]
-    )
-    .drop_duplicates(
-        subset=["company_id"],
-        keep="last"
-    )
+    df.sort_values(["company_id", "year_number"])
+    .drop_duplicates(subset=["company_id"], keep="last")
     .reset_index(drop=True)
 )
 
@@ -121,13 +98,9 @@ latest_df = (
 # CHECK COMPANY COUNT
 # ============================================================
 
-company_count = latest_df[
-    "company_id"
-].nunique()
+company_count = latest_df["company_id"].nunique()
 
-pattern_count = latest_df[
-    "pattern_label"
-].nunique()
+pattern_count = latest_df["pattern_label"].nunique()
 
 
 # ============================================================
@@ -138,17 +111,11 @@ col1, col2 = st.columns(2)
 
 with col1:
 
-    st.metric(
-        "Companies",
-        company_count
-    )
+    st.metric("Companies", company_count)
 
 with col2:
 
-    st.metric(
-        "Capital Allocation Patterns",
-        pattern_count
-    )
+    st.metric("Capital Allocation Patterns", pattern_count)
 
 
 # ============================================================
@@ -157,9 +124,7 @@ with col2:
 
 st.markdown("---")
 
-st.subheader(
-    "🌳 Capital Allocation Pattern Map"
-)
+st.subheader("🌳 Capital Allocation Pattern Map")
 
 st.caption(
     "Each rectangle represents a company. "
@@ -173,11 +138,7 @@ latest_df["company_value"] = 1
 
 fig = px.treemap(
     latest_df,
-    path=[
-        px.Constant("Nifty 100"),
-        "pattern_label",
-        "company_id"
-    ],
+    path=[px.Constant("Nifty 100"), "pattern_label", "company_id"],
     values="company_value",
     color="pattern_label",
     hover_data={
@@ -187,20 +148,16 @@ fig = px.treemap(
         "cfo_sign": True,
         "cfi_sign": True,
         "cff_sign": True,
-        "company_value": False
+        "company_value": False,
     },
-    title="Companies by Capital Allocation Pattern"
+    title="Companies by Capital Allocation Pattern",
 )
 
 
-fig.update_layout(
-    height=700
-)
+fig.update_layout(height=700)
 
 
-fig.update_traces(
-    textinfo="label+value"
-)
+fig.update_traces(textinfo="label+value")
 
 
 # ============================================================
@@ -208,10 +165,7 @@ fig.update_traces(
 # ============================================================
 
 selection = st.plotly_chart(
-    fig,
-    use_container_width=True,
-    on_select="rerun",
-    selection_mode="points"
+    fig, use_container_width=True, on_select="rerun", selection_mode="points"
 )
 
 
@@ -228,21 +182,15 @@ try:
 
     if points:
 
-        point_index = points[0].get(
-            "point_index"
-        )
+        point_index = points[0].get("point_index")
 
         if point_index is not None:
 
-            selected_row = latest_df.iloc[
-                point_index
-            ]
+            selected_row = latest_df.iloc[point_index]
 
-            selected_pattern = (
-                selected_row["pattern_label"]
-            )
+            selected_pattern = selected_row["pattern_label"]
 
-except Exception:
+except (AttributeError, IndexError, KeyError, TypeError):
     selected_pattern = None
 
 
@@ -252,23 +200,13 @@ except Exception:
 
 st.markdown("---")
 
-st.subheader(
-    "🔎 View Companies by Pattern"
-)
+st.subheader("🔎 View Companies by Pattern")
 
-pattern_options = sorted(
-    latest_df[
-        "pattern_label"
-    ]
-    .dropna()
-    .unique()
-    .tolist()
-)
+pattern_options = sorted(latest_df["pattern_label"].dropna().unique().tolist())
 
 
 selected_pattern_dropdown = st.selectbox(
-    "Select a capital allocation pattern",
-    pattern_options
+    "Select a capital allocation pattern", pattern_options
 )
 
 
@@ -284,15 +222,10 @@ pattern_to_show = (
 # COMPANY LIST
 # ============================================================
 
-pattern_df = latest_df[
-    latest_df["pattern_label"]
-    == pattern_to_show
-].copy()
+pattern_df = latest_df[latest_df["pattern_label"] == pattern_to_show].copy()
 
 
-st.subheader(
-    f"Companies — {pattern_to_show}"
-)
+st.subheader(f"Companies — {pattern_to_show}")
 
 
 st.caption(
@@ -302,14 +235,7 @@ st.caption(
 
 
 display_df = pattern_df[
-    [
-        "company_id",
-        "year",
-        "cfo_sign",
-        "cfi_sign",
-        "cff_sign",
-        "pattern_label"
-    ]
+    ["company_id", "year", "cfo_sign", "cfi_sign", "cff_sign", "pattern_label"]
 ].copy()
 
 
@@ -320,16 +246,12 @@ display_df = display_df.rename(
         "cfo_sign": "CFO",
         "cfi_sign": "CFI",
         "cff_sign": "CFF",
-        "pattern_label": "Pattern"
+        "pattern_label": "Pattern",
     }
 )
 
 
-st.dataframe(
-    display_df,
-    use_container_width=True,
-    hide_index=True
-)
+st.dataframe(display_df, use_container_width=True, hide_index=True)
 
 
 # ============================================================
@@ -338,24 +260,13 @@ st.dataframe(
 
 st.markdown("---")
 
-st.subheader(
-    "Pattern Distribution"
-)
+st.subheader("Pattern Distribution")
 
 
-pattern_summary = (
-    latest_df[
-        "pattern_label"
-    ]
-    .value_counts()
-    .reset_index()
-)
+pattern_summary = latest_df["pattern_label"].value_counts().reset_index()
 
 
-pattern_summary.columns = [
-    "Pattern",
-    "Companies"
-]
+pattern_summary.columns = ["Pattern", "Companies"]
 
 
 fig_summary = px.bar(
@@ -363,23 +274,18 @@ fig_summary = px.bar(
     x="Pattern",
     y="Companies",
     text="Companies",
-    title="Nifty 100 Capital Allocation Patterns"
+    title="Nifty 100 Capital Allocation Patterns",
 )
 
 
-fig_summary.update_traces(
-    textposition="outside"
-)
+fig_summary.update_traces(textposition="outside")
 
 
 fig_summary.update_layout(
     height=450,
     xaxis_title="Capital Allocation Pattern",
-    yaxis_title="Number of Companies"
+    yaxis_title="Number of Companies",
 )
 
 
-st.plotly_chart(
-    fig_summary,
-    use_container_width=True
-)
+st.plotly_chart(fig_summary, use_container_width=True)

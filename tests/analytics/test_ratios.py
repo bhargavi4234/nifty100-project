@@ -1,28 +1,26 @@
-import pytest
-
 from src.analytics.ratios import (
-    safe_divide,
-    net_profit_margin,
-    operating_profit_margin,
-    check_opm_difference,
-    return_on_equity,
-    return_on_capital_employed,
-    return_on_assets,
-    roce_benchmark,
+    asset_turnover,
     calculate_profitability_ratios,
+    check_opm_difference,
     debt_to_equity,
     high_leverage_flag,
-    interest_coverage_ratio,
     icr_label,
     icr_warning_flag,
+    interest_coverage_ratio,
     net_debt,
-    asset_turnover,
+    net_profit_margin,
+    operating_profit_margin,
+    return_on_assets,
+    return_on_capital_employed,
+    return_on_equity,
+    roce_benchmark,
+    safe_divide,
 )
-
 
 # -----------------------------------------------------
 # Safe Divide
 # -----------------------------------------------------
+
 
 def test_safe_divide_normal():
     assert safe_divide(100, 10) == 10
@@ -36,6 +34,7 @@ def test_safe_divide_zero():
 # Net Profit Margin
 # -----------------------------------------------------
 
+
 def test_net_profit_margin_normal():
     assert net_profit_margin(100, 1000) == 10.0
 
@@ -48,6 +47,7 @@ def test_net_profit_margin_zero_sales():
 # Operating Profit Margin
 # -----------------------------------------------------
 
+
 def test_operating_profit_margin_normal():
     assert operating_profit_margin(250, 1000) == 25.0
 
@@ -55,6 +55,7 @@ def test_operating_profit_margin_normal():
 # -----------------------------------------------------
 # OPM Cross Check
 # -----------------------------------------------------
+
 
 def test_opm_difference_true():
     assert check_opm_difference(18.0, 20.5) is True
@@ -68,73 +69,49 @@ def test_opm_difference_false():
 # Return on Equity
 # -----------------------------------------------------
 
+
 def test_return_on_equity_normal():
-    assert return_on_equity(
-        100,
-        500,
-        500
-    ) == 10.0
+    assert return_on_equity(100, 500, 500) == 10.0
 
 
 def test_return_on_equity_negative_equity():
-    assert return_on_equity(
-        100,
-        -100,
-        50
-    ) is None
+    assert return_on_equity(100, -100, 50) is None
 
 
 def test_return_on_equity_zero_equity():
-    assert return_on_equity(
-        100,
-        0,
-        0
-    ) is None
+    assert return_on_equity(100, 0, 0) is None
 
 
 # -----------------------------------------------------
 # Return on Capital Employed
 # -----------------------------------------------------
 
+
 def test_return_on_capital_employed_normal():
-    assert return_on_capital_employed(
-        200,
-        500,
-        500,
-        1000
-    ) == 10.0
+    assert return_on_capital_employed(200, 500, 500, 1000) == 10.0
 
 
 def test_return_on_capital_employed_zero():
-    assert return_on_capital_employed(
-        100,
-        0,
-        0,
-        0
-    ) is None
+    assert return_on_capital_employed(100, 0, 0, 0) is None
 
 
 # -----------------------------------------------------
 # Return on Assets
 # -----------------------------------------------------
 
+
 def test_return_on_assets_normal():
-    assert return_on_assets(
-        100,
-        1000
-    ) == 10.0
+    assert return_on_assets(100, 1000) == 10.0
 
 
 def test_return_on_assets_zero_assets():
-    assert return_on_assets(
-        100,
-        0
-    ) is None
+    assert return_on_assets(100, 0) is None
 
 
 # -----------------------------------------------------
 # ROCE Benchmark
 # -----------------------------------------------------
+
 
 def test_roce_benchmark_financial():
     assert roce_benchmark("Financials") == "sector_relative"
@@ -148,6 +125,7 @@ def test_roce_benchmark_non_financial():
 # Full Ratio Calculation
 # -----------------------------------------------------
 
+
 def test_calculate_profitability_ratios():
 
     sample = {
@@ -159,7 +137,7 @@ def test_calculate_profitability_ratios():
         "borrowings": 1000,
         "total_assets": 2500,
         "opm_percentage": 20,
-        "broad_sector": "Industrials"
+        "broad_sector": "Industrials",
     }
 
     result = calculate_profitability_ratios(sample)
@@ -176,6 +154,7 @@ def test_calculate_profitability_ratios():
 # Financial Sector Test
 # -----------------------------------------------------
 
+
 def test_calculate_profitability_ratios_financial():
 
     sample = {
@@ -187,7 +166,7 @@ def test_calculate_profitability_ratios_financial():
         "borrowings": 3000,
         "total_assets": 12000,
         "opm_percentage": 14,
-        "broad_sector": "Financials"
+        "broad_sector": "Financials",
     }
 
     result = calculate_profitability_ratios(sample)
@@ -198,6 +177,7 @@ def test_calculate_profitability_ratios_financial():
 # -----------------------------------------------------
 # Edge Case
 # -----------------------------------------------------
+
 
 def test_calculate_profitability_ratios_zero_sales():
 
@@ -210,7 +190,7 @@ def test_calculate_profitability_ratios_zero_sales():
         "borrowings": 100,
         "total_assets": 1000,
         "opm_percentage": 15,
-        "broad_sector": "Industrials"
+        "broad_sector": "Industrials",
     }
 
     result = calculate_profitability_ratios(sample)
@@ -223,6 +203,7 @@ def test_calculate_profitability_ratios_zero_sales():
 # Edge Case
 # -----------------------------------------------------
 
+
 def test_calculate_profitability_ratios_negative_equity():
 
     sample = {
@@ -234,7 +215,7 @@ def test_calculate_profitability_ratios_negative_equity():
         "borrowings": 200,
         "total_assets": 1000,
         "opm_percentage": 15,
-        "broad_sector": "Industrials"
+        "broad_sector": "Industrials",
     }
 
     result = calculate_profitability_ratios(sample)
@@ -245,6 +226,7 @@ def test_calculate_profitability_ratios_negative_equity():
 # -----------------------------------------------------
 # Day 09 - Debt to Equity
 # -----------------------------------------------------
+
 
 def test_debt_to_equity_normal():
     assert debt_to_equity(1000, 500, 500) == 1.0
@@ -258,6 +240,7 @@ def test_debt_to_equity_zero_borrowings():
 # High Leverage Flag
 # -----------------------------------------------------
 
+
 def test_high_leverage_flag_true():
     assert high_leverage_flag(6.0, "Industrials") is True
 
@@ -269,6 +252,7 @@ def test_high_leverage_flag_financial():
 # -----------------------------------------------------
 # Interest Coverage Ratio
 # -----------------------------------------------------
+
 
 def test_interest_coverage_ratio():
     assert interest_coverage_ratio(200, 50, 50) == 5.0
@@ -282,6 +266,7 @@ def test_interest_coverage_ratio_zero_interest():
 # ICR Label & Warning
 # -----------------------------------------------------
 
+
 def test_icr_label():
     assert icr_label(None) == "Debt Free"
 
@@ -294,6 +279,7 @@ def test_icr_warning_flag():
 # Net Debt
 # -----------------------------------------------------
 
+
 def test_net_debt():
     assert net_debt(1000, 300) == 700
 
@@ -301,6 +287,7 @@ def test_net_debt():
 # -----------------------------------------------------
 # Asset Turnover
 # -----------------------------------------------------
+
 
 def test_asset_turnover():
     assert asset_turnover(1000, 500) == 2.0

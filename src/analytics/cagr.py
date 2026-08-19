@@ -1,9 +1,7 @@
-import math
-
-
 # -----------------------------------------------------
 # CAGR Calculation
 # -----------------------------------------------------
+
 
 def calculate_cagr(start_value, end_value, years_available, required_years):
     """
@@ -28,62 +26,51 @@ def calculate_cagr(start_value, end_value, years_available, required_years):
     if start_value < 0 and end_value < 0:
         return None, "BOTH_NEGATIVE"
 
-    cagr = (
-        (end_value / start_value) ** (1 / required_years) - 1
-    ) * 100
+    cagr = ((end_value / start_value) ** (1 / required_years) - 1) * 100
 
     return round(cagr, 2), None
+
 
 # -----------------------------------------------------
 # Revenue CAGR
 # -----------------------------------------------------
 
+
 def revenue_cagr(start_value, end_value, years_available, years):
     """
     Revenue CAGR wrapper.
     """
-    return calculate_cagr(
-        start_value,
-        end_value,
-        years_available,
-        years
-    )
+    return calculate_cagr(start_value, end_value, years_available, years)
 
 
 # -----------------------------------------------------
 # PAT CAGR
 # -----------------------------------------------------
 
+
 def pat_cagr(start_value, end_value, years_available, years):
     """
     PAT (Net Profit) CAGR wrapper.
     """
-    return calculate_cagr(
-        start_value,
-        end_value,
-        years_available,
-        years
-    )
+    return calculate_cagr(start_value, end_value, years_available, years)
 
 
 # -----------------------------------------------------
 # EPS CAGR
 # -----------------------------------------------------
 
+
 def eps_cagr(start_value, end_value, years_available, years):
     """
     EPS CAGR wrapper.
     """
-    return calculate_cagr(
-        start_value,
-        end_value,
-        years_available,
-        years
-    )
+    return calculate_cagr(start_value, end_value, years_available, years)
+
 
 # -----------------------------------------------------
 # CAGR Summary
 # -----------------------------------------------------
+
 
 def calculate_growth_metrics(data):
     """
@@ -107,10 +94,7 @@ def calculate_growth_metrics(data):
         for years in (3, 5, 10):
 
             cagr, flag = calculate_cagr(
-                start_value,
-                end_value,
-                data["years_available"],
-                years
+                start_value, end_value, data["years_available"], years
             )
 
             result[f"{metric_name}_cagr_{years}yr"] = cagr

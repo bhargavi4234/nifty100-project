@@ -1,7 +1,9 @@
 import os
 import sqlite3
+from datetime import datetime, timezone
+
 import pandas as pd
-from datetime import datetime
+
 # -----------------------------
 # Paths
 # -----------------------------
@@ -45,6 +47,7 @@ TABLE_MAP = {
 # Clean Column Names
 # -----------------------------
 def clean_columns(df):
+    "Clean columns."
     df.columns = (
         df.columns.astype(str)
         .str.strip()
@@ -75,18 +78,11 @@ audit = []
 # -----------------------------
 # Load Valid Company IDs
 # -----------------------------
-companies_df = pd.read_excel(
-    os.path.join(RAW_DATA, "companies.xlsx"),
-    header=1
-)
+companies_df = pd.read_excel(os.path.join(RAW_DATA, "companies.xlsx"), header=1)
 
 companies_df = clean_columns(companies_df)
 
-valid_ids = set(
-    companies_df["id"]
-    .astype(str)
-    .str.strip()
-)
+valid_ids = set(companies_df["id"].astype(str).str.strip())
 
 # -----------------------------
 # Load Data into SQLite
@@ -106,12 +102,7 @@ for excel_file, table in TABLE_MAP.items():
 
         before = len(df)
 
-        df = df[
-            df["company_id"]
-            .astype(str)
-            .str.strip()
-            .isin(valid_ids)
-        ]
+        df = df[df["company_id"].astype(str).str.strip().isin(valid_ids)]
 
         removed = before - len(df)
 
@@ -127,12 +118,14 @@ for excel_file, table in TABLE_MAP.items():
 
     print(f"{table:<20} {len(df):>5} rows loaded")
 
-    audit.append({
-        "table_name": table,
-        "rows_loaded": len(df),
-        "status": "SUCCESS",
-        "load_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    })
+    audit.append(
+        {
+            "table_name": table,
+            "rows_loaded": len(df),
+            "status": "SUCCESS",
+            "load_time": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        }
+    )
 conn.commit()
 
 # -----------------------------
@@ -145,9 +138,7 @@ print("=" * 60)
 
 for table in TABLE_MAP.values():
 
-    count = cursor.execute(
-        f"SELECT COUNT(*) FROM {table}"
-    ).fetchone()[0]
+    count = cursor.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
 
     print(f"{table:<20} {count}")
 

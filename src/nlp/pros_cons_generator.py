@@ -1,10 +1,8 @@
-import math
 import re
 import sqlite3
 from pathlib import Path
 
 import pandas as pd
-
 
 # ============================================================
 # PATHS / SETTINGS
@@ -50,8 +48,7 @@ PRO_TEXT = {
         "financial stress from debt servicing"
     ),
     "PRO_08": (
-        "Consistent dividend yield above 2% backed by positive "
-        "free cash flow"
+        "Consistent dividend yield above 2% backed by positive " "free cash flow"
     ),
     "PRO_09": (
         "Earnings per share growing above 15% CAGR indicates "
@@ -85,10 +82,7 @@ CON_TEXT = {
         "Operating margins declining for 3 consecutive years "
         "suggest pricing or cost pressure"
     ),
-    "CON_04": (
-        "Company reported a net loss in the most recent "
-        "financial year"
-    ),
+    "CON_04": ("Company reported a net loss in the most recent " "financial year"),
     "CON_05": (
         "Revenue contraction over 2 consecutive years "
         "indicates demand weakness or market share loss"
@@ -127,6 +121,7 @@ CON_TEXT = {
 # ============================================================
 # DATABASE
 # ============================================================
+
 
 def load_data():
     """Load all tables required by the NLP rules."""
@@ -185,6 +180,7 @@ def load_data():
 # YEAR HELPERS
 # ============================================================
 
+
 def extract_year(value):
     """
     Extract a calendar year from strings such as:
@@ -234,13 +230,9 @@ def latest_annual(df, company_id):
     to financial years/latest year rather than TTM.
     """
 
-    company = df[
-        df["company_id"].astype(str) == str(company_id)
-    ].copy()
+    company = df[df["company_id"].astype(str) == str(company_id)].copy()
 
-    company = company[
-        company["year_num"].notna()
-    ]
+    company = company[company["year_num"].notna()]
 
     if company.empty:
         return None
@@ -253,13 +245,9 @@ def latest_annual(df, company_id):
 def historical_annual(df, company_id):
     """Return annual records only, excluding TTM."""
 
-    company = df[
-        df["company_id"].astype(str) == str(company_id)
-    ].copy()
+    company = df[df["company_id"].astype(str) == str(company_id)].copy()
 
-    company = company[
-        company["year_num"].notna()
-    ]
+    company = company[company["year_num"].notna()]
 
     company = company.sort_values("year_num")
 
@@ -275,6 +263,7 @@ def historical_annual(df, company_id):
 # CAGR
 # ============================================================
 
+
 def calculate_cagr(start_value, end_value, years):
     """Calculate CAGR percentage."""
 
@@ -287,11 +276,7 @@ def calculate_cagr(start_value, end_value, years):
     ):
         return None
 
-    return (
-        (float(end_value) / float(start_value))
-        ** (1.0 / years)
-        - 1.0
-    ) * 100.0
+    return ((float(end_value) / float(start_value)) ** (1.0 / years) - 1.0) * 100.0
 
 
 def calculate_5yr_cagr(
@@ -312,25 +297,19 @@ def calculate_5yr_cagr(
         company_id,
     )
 
-    hist = hist.dropna(
-        subset=["year_num", column]
-    )
+    hist = hist.dropna(subset=["year_num", column])
 
     if len(hist) < 2:
         return None
 
-    rows = hist[
-        ["year_num", column]
-    ].dropna()
+    rows = hist[["year_num", column]].dropna()
 
     latest = rows.iloc[-1]
 
     # Prefer exactly five years before latest.
     target_year = int(latest["year_num"]) - 5
 
-    exact = rows[
-        rows["year_num"] == target_year
-    ]
+    exact = rows[rows["year_num"] == target_year]
 
     if not exact.empty:
         start = exact.iloc[-1]
@@ -343,20 +322,14 @@ def calculate_5yr_cagr(
 
     # Otherwise find the closest observation at least
     # four years before the latest.
-    candidates = rows[
-        rows["year_num"]
-        <= latest["year_num"] - 4
-    ]
+    candidates = rows[rows["year_num"] <= latest["year_num"] - 4]
 
     if candidates.empty:
         return None
 
     start = candidates.iloc[-1]
 
-    actual_years = (
-        latest["year_num"]
-        - start["year_num"]
-    )
+    actual_years = latest["year_num"] - start["year_num"]
 
     return calculate_cagr(
         start[column],
@@ -368,6 +341,7 @@ def calculate_5yr_cagr(
 # ============================================================
 # CONFIDENCE
 # ============================================================
+
 
 def confidence_above(
     value,
@@ -389,8 +363,7 @@ def confidence_above(
     return round(
         min(
             100.0,
-            65.0
-            + (extra / max_extra) * 35.0,
+            65.0 + (extra / max_extra) * 35.0,
         ),
         2,
     )
@@ -416,8 +389,7 @@ def confidence_below(
     return round(
         min(
             100.0,
-            65.0
-            + (extra / max_extra) * 35.0,
+            65.0 + (extra / max_extra) * 35.0,
         ),
         2,
     )
@@ -461,6 +433,7 @@ def add_signal(
 # TREND HELPERS
 # ============================================================
 
+
 def consecutive_condition(
     df,
     company_id,
@@ -477,9 +450,7 @@ def consecutive_condition(
         company_id,
     )
 
-    hist = hist.dropna(
-        subset=["year_num", column]
-    )
+    hist = hist.dropna(subset=["year_num", column])
 
     if len(hist) < count:
         return False
@@ -487,32 +458,21 @@ def consecutive_condition(
     years = hist["year_num"].tolist()
     values = hist[column].tolist()
 
-    for i in range(
-        len(hist) - count + 1
-    ):
+    for i in range(len(hist) - count + 1):
 
-        window_years = years[
-            i:i + count
-        ]
+        window_years = years[i : i + count]
 
-        window_values = values[
-            i:i + count
-        ]
+        window_values = values[i : i + count]
 
         # Require consecutive calendar years.
         consecutive_years = all(
-            window_years[j] + 1
-            == window_years[j + 1]
-            for j in range(count - 1)
+            window_years[j] + 1 == window_years[j + 1] for j in range(count - 1)
         )
 
         if not consecutive_years:
             continue
 
-        if all(
-            condition(value)
-            for value in window_values
-        ):
+        if all(condition(value) for value in window_values):
             return True
 
     return False
@@ -531,9 +491,7 @@ def improving_trend(
         company_id,
     )
 
-    hist = hist.dropna(
-        subset=["year_num", column]
-    )
+    hist = hist.dropna(subset=["year_num", column])
 
     if len(hist) < count:
         return False
@@ -541,28 +499,16 @@ def improving_trend(
     years = hist["year_num"].tolist()
     values = hist[column].tolist()
 
-    for i in range(
-        len(hist) - count + 1
-    ):
+    for i in range(len(hist) - count + 1):
 
-        y = years[
-            i:i + count
-        ]
+        y = years[i : i + count]
 
-        v = values[
-            i:i + count
-        ]
+        v = values[i : i + count]
 
-        if not all(
-            y[j] + 1 == y[j + 1]
-            for j in range(count - 1)
-        ):
+        if not all(y[j] + 1 == y[j + 1] for j in range(count - 1)):
             continue
 
-        if all(
-            v[j] < v[j + 1]
-            for j in range(count - 1)
-        ):
+        if all(v[j] < v[j + 1] for j in range(count - 1)):
             return True
 
     return False
@@ -581,9 +527,7 @@ def declining_trend(
         company_id,
     )
 
-    hist = hist.dropna(
-        subset=["year_num", column]
-    )
+    hist = hist.dropna(subset=["year_num", column])
 
     if len(hist) < count:
         return False
@@ -591,28 +535,16 @@ def declining_trend(
     years = hist["year_num"].tolist()
     values = hist[column].tolist()
 
-    for i in range(
-        len(hist) - count + 1
-    ):
+    for i in range(len(hist) - count + 1):
 
-        y = years[
-            i:i + count
-        ]
+        y = years[i : i + count]
 
-        v = values[
-            i:i + count
-        ]
+        v = values[i : i + count]
 
-        if not all(
-            y[j] + 1 == y[j + 1]
-            for j in range(count - 1)
-        ):
+        if not all(y[j] + 1 == y[j + 1] for j in range(count - 1)):
             continue
 
-        if all(
-            v[j] > v[j + 1]
-            for j in range(count - 1)
-        ):
+        if all(v[j] > v[j + 1] for j in range(count - 1)):
             return True
 
     return False
@@ -621,6 +553,7 @@ def declining_trend(
 # ============================================================
 # FALLBACK METRICS
 # ============================================================
+
 
 def get_latest_ratio(
     ratio_row,
@@ -649,10 +582,7 @@ def get_company_metric(
 ):
     """Fallback to companies table."""
 
-    row = companies[
-        companies["id"].astype(str)
-        == str(company_id)
-    ]
+    row = companies[companies["id"].astype(str) == str(company_id)]
 
     if row.empty:
         return None
@@ -669,6 +599,7 @@ def get_company_metric(
 # STOCK PRICE
 # ============================================================
 
+
 def latest_stock_price(
     stock_prices,
     company_id,
@@ -676,8 +607,7 @@ def latest_stock_price(
     """Return latest adjusted close."""
 
     company = stock_prices[
-        stock_prices["company_id"].astype(str)
-        == str(company_id)
+        stock_prices["company_id"].astype(str) == str(company_id)
     ].copy()
 
     if company.empty:
@@ -702,7 +632,9 @@ def latest_stock_price(
 # MAIN GENERATOR
 # ============================================================
 
+
 def generate():
+    "Generate."
 
     print("=" * 70)
     print("DAY 30 - NLP AUTO PROS / CONS GENERATOR")
@@ -718,9 +650,7 @@ def generate():
         stock_prices,
     ) = load_data()
 
-    print(
-        f"Companies loaded: {len(companies)}"
-    )
+    print(f"Companies loaded: {len(companies)}")
 
     ratios = prepare_history(ratios)
     pnl = prepare_history(pnl)
@@ -742,8 +672,7 @@ def generate():
                 case=False,
                 na=False,
             )
-        ]["company_id"]
-        .astype(str)
+        ]["company_id"].astype(str)
     )
 
     # ========================================================
@@ -759,11 +688,6 @@ def generate():
 
         pnl_row = latest_annual(
             pnl,
-            company_id,
-        )
-
-        balance_row = latest_annual(
-            balance,
             company_id,
         )
 
@@ -818,9 +742,7 @@ def generate():
         if opm is None and pnl_row is not None:
             opm = (
                 pnl_row["opm_percentage"]
-                if not pd.isna(
-                    pnl_row["opm_percentage"]
-                )
+                if not pd.isna(pnl_row["opm_percentage"])
                 else None
             )
 
@@ -877,11 +799,7 @@ def generate():
         roe_high = ratios.copy()
 
         if not roe_high.empty:
-            roe_high["roe_above_20"] = (
-                roe_high[
-                    "return_on_equity_pct"
-                ] - 20
-            )
+            roe_high["roe_above_20"] = roe_high["return_on_equity_pct"] - 20
 
             if consecutive_condition(
                 roe_high,
@@ -901,20 +819,19 @@ def generate():
 
         # Fallback using companies table only if historical
         # Ratio Engine data does not exist.
-        if ratio_row is None and roe is not None:
-            if roe > 20:
-                add_signal(
-                    results,
-                    company_id,
-                    "pro",
-                    "PRO_01",
-                    PRO_TEXT["PRO_01"],
-                    confidence_above(
-                        roe,
-                        20,
-                        20,
-                    ),
-                )
+        if ratio_row is None and roe is not None and roe > 20:
+            add_signal(
+                results,
+                company_id,
+                "pro",
+                "PRO_01",
+                PRO_TEXT["PRO_01"],
+                confidence_above(
+                    roe,
+                    20,
+                    20,
+                ),
+            )
 
         # ====================================================
         # PRO 2
@@ -1053,12 +970,7 @@ def generate():
         # Dividend Yield >2% + Positive FCF
         # ====================================================
 
-        if (
-            pnl_row is not None
-            and payout is not None
-            and fcf is not None
-            and fcf > 0
-        ):
+        if pnl_row is not None and payout is not None and fcf is not None and fcf > 0:
 
             eps = pnl_row["eps"]
 
@@ -1067,24 +979,11 @@ def generate():
                 company_id,
             )
 
-            if (
-                pd.notna(eps)
-                and eps > 0
-                and price is not None
-                and price > 0
-            ):
+            if pd.notna(eps) and eps > 0 and price is not None and price > 0:
 
-                dividend_per_share = (
-                    float(eps)
-                    * float(payout)
-                    / 100.0
-                )
+                dividend_per_share = float(eps) * float(payout) / 100.0
 
-                dividend_yield = (
-                    dividend_per_share
-                    / price
-                    * 100.0
-                )
+                dividend_yield = dividend_per_share / price * 100.0
 
                 if dividend_yield > 2:
 
@@ -1159,10 +1058,7 @@ def generate():
             and revenue_cagr > pat_cagr
         ):
 
-            difference = (
-                revenue_cagr
-                - pat_cagr
-            )
+            difference = revenue_cagr - pat_cagr
 
             confidence = min(
                 100,
@@ -1199,18 +1095,11 @@ def generate():
 
             recent = bal_hist.tail(3)
 
-            assets = recent[
-                "total_assets"
-            ].tolist()
+            assets = recent["total_assets"].tolist()
 
-            debt = recent[
-                "borrowings"
-            ].tolist()
+            debt = recent["borrowings"].tolist()
 
-            if (
-                assets[0] < assets[1] < assets[2]
-                and debt[0] > debt[1] > debt[2]
-            ):
+            if assets[0] < assets[1] < assets[2] and debt[0] > debt[1] > debt[2]:
 
                 add_signal(
                     results,
@@ -1226,22 +1115,14 @@ def generate():
         # D/E >2 for non-financial companies
         # ====================================================
 
-        if (
-            company_id not in financial_companies
-            and de is not None
-            and de > 2
-        ):
+        if company_id not in financial_companies and de is not None and de > 2:
 
             confidence = min(
                 100,
                 65 + (de - 2) * 10,
             )
 
-            text = CON_TEXT[
-                "CON_01"
-            ].format(
-                value=de
-            )
+            text = CON_TEXT["CON_01"].format(value=de)
 
             add_signal(
                 results,
@@ -1286,18 +1167,7 @@ def generate():
             company_id,
             "opm_percentage",
             3,
-        ):
-
-            add_signal(
-                results,
-                company_id,
-                "con",
-                "CON_03",
-                CON_TEXT["CON_03"],
-                80,
-            )
-
-        elif declining_trend(
+        ) or declining_trend(
             ratios,
             company_id,
             "operating_profit_margin_pct",
@@ -1320,9 +1190,7 @@ def generate():
 
         if (
             pnl_row is not None
-            and pd.notna(
-                pnl_row["net_profit"]
-            )
+            and pd.notna(pnl_row["net_profit"])
             and pnl_row["net_profit"] < 0
         ):
 
@@ -1361,10 +1229,7 @@ def generate():
         # ICR <1.5
         # ====================================================
 
-        if (
-            icr is not None
-            and icr < 1.5
-        ):
+        if icr is not None and icr < 1.5:
 
             confidence = min(
                 100,
@@ -1385,10 +1250,7 @@ def generate():
         # Dividend payout >100%
         # ====================================================
 
-        if (
-            payout is not None
-            and payout > 100
-        ):
+        if payout is not None and payout > 100:
 
             confidence = min(
                 100,
@@ -1451,10 +1313,7 @@ def generate():
         # ROCE <10%
         # ====================================================
 
-        if (
-            roce is not None
-            and roce < 10
-        ):
+        if roce is not None and roce < 10:
 
             confidence = min(
                 100,
@@ -1542,39 +1401,15 @@ def generate():
     # VERIFICATION
     # ========================================================
 
-    expected_companies = set(
-        companies["id"]
-        .astype(str)
-    )
+    expected_companies = set(companies["id"].astype(str))
 
-    output_companies = set(
-        output_df["company_id"]
-        .astype(str)
-    )
+    pro_companies = set(output_df[output_df["type"] == "pro"]["company_id"].astype(str))
 
-    pro_companies = set(
-        output_df[
-            output_df["type"] == "pro"
-        ]["company_id"]
-        .astype(str)
-    )
+    con_companies = set(output_df[output_df["type"] == "con"]["company_id"].astype(str))
 
-    con_companies = set(
-        output_df[
-            output_df["type"] == "con"
-        ]["company_id"]
-        .astype(str)
-    )
+    missing_pro = expected_companies - pro_companies
 
-    missing_pro = (
-        expected_companies
-        - pro_companies
-    )
-
-    missing_con = (
-        expected_companies
-        - con_companies
-    )
+    missing_con = expected_companies - con_companies
 
     # ========================================================
     # REPORT
@@ -1585,50 +1420,26 @@ def generate():
     print("DAY 30 VERIFICATION")
     print("=" * 70)
 
-    print(
-        f"Companies in universe : "
-        f"{len(expected_companies)}"
-    )
+    print(f"Companies in universe : " f"{len(expected_companies)}")
 
-    print(
-        f"Companies with Pro    : "
-        f"{len(pro_companies)}"
-    )
+    print(f"Companies with Pro    : " f"{len(pro_companies)}")
 
-    print(
-        f"Companies with Con    : "
-        f"{len(con_companies)}"
-    )
+    print(f"Companies with Con    : " f"{len(con_companies)}")
 
-    print(
-        f"Total generated       : "
-        f"{len(output_df)}"
-    )
+    print(f"Total generated       : " f"{len(output_df)}")
 
     print()
     print("RULE COVERAGE")
     print("-" * 70)
 
-    rule_counts = (
-        output_df
-        .groupby("rule_id")
-        .size()
-        .sort_index()
-    )
+    rule_counts = output_df.groupby("rule_id").size().sort_index()
 
-    all_rules = [
-        f"PRO_{i:02d}"
-        for i in range(1, 13)
-    ] + [
-        f"CON_{i:02d}"
-        for i in range(1, 13)
+    all_rules = [f"PRO_{i:02d}" for i in range(1, 13)] + [
+        f"CON_{i:02d}" for i in range(1, 13)
     ]
 
     for rule_id in all_rules:
-        print(
-            f"{rule_id:<10} "
-            f"{int(rule_counts.get(rule_id, 0)):>4}"
-        )
+        print(f"{rule_id:<10} " f"{int(rule_counts.get(rule_id, 0)):>4}")
 
     print()
     print(
@@ -1637,9 +1448,7 @@ def generate():
     )
 
     if missing_pro:
-        print(
-            sorted(missing_pro)
-        )
+        print(sorted(missing_pro))
 
     print()
     print(
@@ -1648,34 +1457,20 @@ def generate():
     )
 
     if missing_con:
-        print(
-            sorted(missing_con)
-        )
+        print(sorted(missing_con))
 
     print()
+    print("Rules intentionally unavailable:")
     print(
-        "Rules intentionally unavailable:"
-    )
-    print(
-        "CON_11 - EBITDA and cash balance are "
-        "not present in the current database."
+        "CON_11 - EBITDA and cash balance are " "not present in the current database."
     )
 
     print()
-    print(
-        f"Output: {OUTPUT_PATH}"
-    )
+    print(f"Output: {OUTPUT_PATH}")
 
-    if (
-        not missing_pro
-        and not missing_con
-    ):
+    if not missing_pro and not missing_con:
         print()
-        print(
-            "STATUS: PASS - "
-            "All companies have at least "
-            "one Pro and one Con."
-        )
+        print("STATUS: PASS - " "All companies have at least " "one Pro and one Con.")
     else:
         print()
         print(

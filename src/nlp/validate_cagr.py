@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 DB_PATH = Path("data/db/nifty100.db")
 
 PARSED_FILE = Path("output/analysis_parsed.csv")
@@ -42,9 +41,7 @@ def load_ratio_engine_data(db_path):
     con.close()
 
     if df.empty:
-        raise ValueError(
-            "No CAGR data found in financial_ratios."
-        )
+        raise ValueError("No CAGR data found in financial_ratios.")
 
     return df
 
@@ -63,27 +60,16 @@ def select_latest_ratio_values(df):
     df = df.copy()
 
     # Extract year from strings such as 'Mar 2024'
-    df["year_num"] = (
-        df["year"]
-        .astype(str)
-        .str.extract(r"(\d{4})")[0]
-    )
+    df["year_num"] = df["year"].astype(str).str.extract(r"(\d{4})")[0]
 
     df["year_num"] = pd.to_numeric(
         df["year_num"],
         errors="coerce",
     )
 
-    df = df.sort_values(
-        ["company_id", "year_num"]
-    )
+    df = df.sort_values(["company_id", "year_num"])
 
-    latest = (
-        df
-        .groupby("company_id", as_index=False)
-        .tail(1)
-        .copy()
-    )
+    latest = df.groupby("company_id", as_index=False).tail(1).copy()
 
     return latest
 
@@ -102,14 +88,11 @@ def calculate_divergence(parsed_value, computed_value):
     if computed_value == 0:
         return None
 
-    return (
-        abs(parsed_value - computed_value)
-        / abs(computed_value)
-        * 100
-    )
+    return abs(parsed_value - computed_value) / abs(computed_value) * 100
 
 
 def validate_cagr():
+    "Validate cagr."
 
     print("=" * 60)
     print("DAY 29 - RATIO ENGINE CAGR CROSS-VALIDATION")
@@ -123,36 +106,21 @@ def validate_cagr():
 
     # Only 5-year CAGR values can be compared directly
     # with the Ratio Engine's 5-year CAGR fields.
-    parsed = parsed[
-        parsed["period_years"] == 5
-    ].copy()
+    parsed = parsed[parsed["period_years"] == 5].copy()
 
-    parsed = parsed[
-        parsed["metric_type"].isin(
-            METRIC_MAPPING.keys()
-        )
-    ].copy()
+    parsed = parsed[parsed["metric_type"].isin(METRIC_MAPPING.keys())].copy()
 
-    print(
-        f"Parsed 5-year CAGR records: {len(parsed)}"
-    )
+    print(f"Parsed 5-year CAGR records: {len(parsed)}")
 
     # ---------------------------------------------------------
     # Load Ratio Engine data
     # ---------------------------------------------------------
 
-    ratio_df = load_ratio_engine_data(
-        DB_PATH
-    )
+    ratio_df = load_ratio_engine_data(DB_PATH)
 
-    latest_ratio = select_latest_ratio_values(
-        ratio_df
-    )
+    latest_ratio = select_latest_ratio_values(ratio_df)
 
-    print(
-        f"Ratio Engine companies: "
-        f"{latest_ratio['company_id'].nunique()}"
-    )
+    print(f"Ratio Engine companies: " f"{latest_ratio['company_id'].nunique()}")
 
     # ---------------------------------------------------------
     # Compare values
@@ -168,14 +136,9 @@ def validate_cagr():
 
         parsed_value = row["value_pct"]
 
-        ratio_column = METRIC_MAPPING[
-            metric_type
-        ]
+        ratio_column = METRIC_MAPPING[metric_type]
 
-        matches = latest_ratio[
-            latest_ratio["company_id"]
-            == company_id
-        ]
+        matches = latest_ratio[latest_ratio["company_id"] == company_id]
 
         if matches.empty:
 
@@ -193,9 +156,7 @@ def validate_cagr():
 
             continue
 
-        computed_value = matches.iloc[0][
-            ratio_column
-        ]
+        computed_value = matches.iloc[0][ratio_column]
 
         divergence = calculate_divergence(
             parsed_value,
@@ -222,17 +183,13 @@ def validate_cagr():
                 "parsed_value_pct": parsed_value,
                 "computed_value_pct": computed_value,
                 "divergence_pct": (
-                    round(divergence, 2)
-                    if divergence is not None
-                    else None
+                    round(divergence, 2) if divergence is not None else None
                 ),
                 "validation_status": status,
             }
         )
 
-    validation_df = pd.DataFrame(
-        results
-    )
+    validation_df = pd.DataFrame(results)
 
     # ---------------------------------------------------------
     # Save results
@@ -258,39 +215,22 @@ def validate_cagr():
 
     if not validation_df.empty:
 
-        print(
-            validation_df[
-                "validation_status"
-            ].value_counts().to_string()
-        )
+        print(validation_df["validation_status"].value_counts().to_string())
 
         manual_reviews = validation_df[
-            validation_df[
-                "validation_status"
-            ]
-            == "MANUAL_REVIEW"
+            validation_df["validation_status"] == "MANUAL_REVIEW"
         ]
 
         print()
-        print(
-            f"Manual review cases: "
-            f"{len(manual_reviews)}"
-        )
+        print(f"Manual review cases: " f"{len(manual_reviews)}")
 
         if not manual_reviews.empty:
 
             print()
-            print(
-                manual_reviews.to_string(
-                    index=False
-                )
-            )
+            print(manual_reviews.to_string(index=False))
 
     print()
-    print(
-        f"Validation output: "
-        f"{OUTPUT_FILE}"
-    )
+    print(f"Validation output: " f"{OUTPUT_FILE}")
 
     return validation_df
 

@@ -1,4 +1,5 @@
 import os
+
 import pandas as pd
 
 RAW_DATA = "data/raw"
@@ -34,18 +35,10 @@ for file in files:
 
     print(f"\n{'='*60}")
     print(file)
-    print("="*60)
+    print("=" * 60)
 
-    df = pd.read_excel(
-        os.path.join(RAW_DATA, file),
-        header=header
-    )
+    df = pd.read_excel(os.path.join(RAW_DATA, file), header=header)
 
-    df.columns = (
-        df.columns.astype(str)
-        .str.strip()
-        .str.lower()
-        .str.replace(" ", "_")
-    )
+    df.columns = df.columns.astype(str).str.strip().str.lower().str.replace(" ", "_")
 
     print(df.columns.tolist())

@@ -1,8 +1,8 @@
-from pathlib import Path
 import sqlite3
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
-
 
 # ============================================================
 # DATABASE PATH
@@ -17,6 +17,7 @@ DB_PATH = PROJECT_ROOT / "data" / "db" / "nifty100.db"
 # DATABASE CONNECTION
 # ============================================================
 
+
 def get_connection():
     """Create a SQLite database connection."""
     return sqlite3.connect(DB_PATH)
@@ -25,6 +26,7 @@ def get_connection():
 # ============================================================
 # COMPANIES
 # ============================================================
+
 
 @st.cache_data(ttl=600)
 def get_companies():
@@ -54,6 +56,7 @@ def get_companies():
 # ============================================================
 # FINANCIAL RATIOS
 # ============================================================
+
 
 @st.cache_data(ttl=600)
 def get_ratios(ticker, year=None):
@@ -85,6 +88,7 @@ def get_ratios(ticker, year=None):
 # PROFIT AND LOSS
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_pl(ticker):
     """Return profit and loss data for a company."""
@@ -97,16 +101,13 @@ def get_pl(ticker):
     """
 
     with get_connection() as conn:
-        return pd.read_sql_query(
-            query,
-            conn,
-            params=(ticker,)
-        )
+        return pd.read_sql_query(query, conn, params=(ticker,))
 
 
 # ============================================================
 # BALANCE SHEET
 # ============================================================
+
 
 @st.cache_data(ttl=600)
 def get_bs(ticker):
@@ -120,16 +121,13 @@ def get_bs(ticker):
     """
 
     with get_connection() as conn:
-        return pd.read_sql_query(
-            query,
-            conn,
-            params=(ticker,)
-        )
+        return pd.read_sql_query(query, conn, params=(ticker,))
 
 
 # ============================================================
 # CASH FLOW
 # ============================================================
+
 
 @st.cache_data(ttl=600)
 def get_cf(ticker):
@@ -143,16 +141,13 @@ def get_cf(ticker):
     """
 
     with get_connection() as conn:
-        return pd.read_sql_query(
-            query,
-            conn,
-            params=(ticker,)
-        )
+        return pd.read_sql_query(query, conn, params=(ticker,))
 
 
 # ============================================================
 # SECTORS
 # ============================================================
+
 
 @st.cache_data(ttl=600)
 def get_sectors():
@@ -172,6 +167,7 @@ def get_sectors():
 # PEER GROUPS
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_peers(group_name):
     """Return companies belonging to a peer group."""
@@ -183,16 +179,13 @@ def get_peers(group_name):
     """
 
     with get_connection() as conn:
-        return pd.read_sql_query(
-            query,
-            conn,
-            params=(group_name,)
-        )
+        return pd.read_sql_query(query, conn, params=(group_name,))
 
 
 # ============================================================
 # PROS AND CONS
 # ============================================================
+
 
 @st.cache_data(ttl=600)
 def get_pros_cons(ticker):
@@ -207,16 +200,13 @@ def get_pros_cons(ticker):
     """
 
     with get_connection() as conn:
-        return pd.read_sql_query(
-            query,
-            conn,
-            params=(ticker,)
-        )
+        return pd.read_sql_query(query, conn, params=(ticker,))
 
 
 # ============================================================
 # VALUATION
 # ============================================================
+
 
 @st.cache_data(ttl=600)
 def get_valuation(ticker):
@@ -234,8 +224,4 @@ def get_valuation(ticker):
     """
 
     with get_connection() as conn:
-        return pd.read_sql_query(
-            query,
-            conn,
-            params=(ticker,)
-        )
+        return pd.read_sql_query(query, conn, params=(ticker,))

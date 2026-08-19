@@ -1,15 +1,14 @@
 import os
+
 import pandas as pd
 
 from src.analytics.cashflow import capital_allocation_pattern
 
 
 def main():
+    "Main."
 
-    df = pd.read_excel(
-        "data/raw/cashflow.xlsx",
-        header=1
-    )
+    df = pd.read_excel("data/raw/cashflow.xlsx", header=1)
 
     records = []
 
@@ -18,7 +17,7 @@ def main():
         cfo_sign, cfi_sign, cff_sign, label = capital_allocation_pattern(
             row["operating_activity"],
             row["investing_activity"],
-            row["financing_activity"]
+            row["financing_activity"],
         )
 
         records.append(
@@ -36,14 +35,9 @@ def main():
 
     os.makedirs("output", exist_ok=True)
 
-    output.to_csv(
-        "output/capital_allocation.csv",
-        index=False
-    )
+    output.to_csv("output/capital_allocation.csv", index=False)
 
-    print(
-        "capital_allocation.csv generated successfully."
-    )
+    print("capital_allocation.csv generated successfully.")
 
 
 if __name__ == "__main__":

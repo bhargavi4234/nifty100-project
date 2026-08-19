@@ -1,10 +1,8 @@
-import math
 import sqlite3
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 
 # ============================================================
 # PATHS
@@ -12,18 +10,15 @@ import pandas as pd
 
 DB_PATH = Path("data/db/nifty100.db")
 
-OUTPUT_XLSX = Path(
-    "output/cashflow_intelligence.xlsx"
-)
+OUTPUT_XLSX = Path("output/cashflow_intelligence.xlsx")
 
-OUTPUT_ALERTS = Path(
-    "output/distress_alerts.csv"
-)
+OUTPUT_ALERTS = Path("output/distress_alerts.csv")
 
 
 # ============================================================
 # HELPERS
 # ============================================================
+
 
 def extract_year(value):
     """Extract year from values such as 'Mar 2024'."""
@@ -35,10 +30,7 @@ def extract_year(value):
 
     import re
 
-    match = re.search(
-        r"\b(19|20)\d{2}\b",
-        text
-    )
+    match = re.search(r"\b(19|20)\d{2}\b", text)
 
     if not match:
         return None
@@ -51,13 +43,9 @@ def prepare_year_column(df):
 
     df = df.copy()
 
-    df["year_num"] = df["year"].apply(
-        extract_year
-    )
+    df["year_num"] = df["year"].apply(extract_year)
 
-    df = df[
-        df["year_num"].notna()
-    ].copy()
+    df = df[df["year_num"].notna()].copy()
 
     return df
 
@@ -103,6 +91,7 @@ def safe_float(value):
 # CAGR
 # ============================================================
 
+
 def calculate_cagr(
     start_value,
     end_value,
@@ -124,14 +113,7 @@ def calculate_cagr(
     ):
         return np.nan
 
-    return (
-        (
-            float(end_value)
-            / float(start_value)
-        )
-        ** (1.0 / years)
-        - 1
-    ) * 100
+    return ((float(end_value) / float(start_value)) ** (1.0 / years) - 1) * 100
 
 
 def get_fcf_cagr_5yr(
@@ -143,26 +125,18 @@ def get_fcf_cagr_5yr(
     Prefer exactly five years between observations.
     """
 
-    data = company_fcf[
-        ["year_num", "free_cash_flow_cr"]
-    ].dropna()
+    data = company_fcf[["year_num", "free_cash_flow_cr"]].dropna()
 
     if len(data) < 2:
         return np.nan
 
-    data = data.sort_values(
-        "year_num"
-    )
+    data = data.sort_values("year_num")
 
     latest = data.iloc[-1]
 
-    target_year = (
-        int(latest["year_num"]) - 5
-    )
+    target_year = int(latest["year_num"]) - 5
 
-    exact = data[
-        data["year_num"] == target_year
-    ]
+    exact = data[data["year_num"] == target_year]
 
     if not exact.empty:
 
@@ -176,20 +150,14 @@ def get_fcf_cagr_5yr(
 
     # Fallback: use earliest observation that is
     # approximately five years before latest.
-    candidates = data[
-        data["year_num"]
-        <= latest["year_num"] - 4
-    ]
+    candidates = data[data["year_num"] <= latest["year_num"] - 4]
 
     if candidates.empty:
         return np.nan
 
     start = candidates.iloc[-1]
 
-    years = (
-        latest["year_num"]
-        - start["year_num"]
-    )
+    years = latest["year_num"] - start["year_num"]
 
     return calculate_cagr(
         start["free_cash_flow_cr"],
@@ -202,11 +170,11 @@ def get_fcf_cagr_5yr(
 # LOAD DATABASE
 # ============================================================
 
-def load_data():
 
-    con = sqlite3.connect(
-        DB_PATH
-    )
+def load_data():
+    "Load data."
+
+    con = sqlite3.connect(DB_PATH)
 
     companies = pd.read_sql_query(
         """
@@ -293,6 +261,7 @@ def load_data():
 # CFO QUALITY
 # ============================================================
 
+
 def calculate_cfo_quality(
     company_id,
     ratios,
@@ -308,18 +277,14 @@ def calculate_cfo_quality(
         < 0.5       Accrual Risk
     """
 
-    cfo = ratios[
-        ratios["company_id"] == company_id
-    ][
+    cfo = ratios[ratios["company_id"] == company_id][
         [
             "year_num",
             "cash_from_operations_cr",
         ]
     ].copy()
 
-    pat = pnl[
-        pnl["company_id"] == company_id
-    ][
+    pat = pnl[pnl["company_id"] == company_id][
         [
             "year_num",
             "net_profit",
@@ -335,25 +300,16 @@ def calculate_cfo_quality(
 
     merged = merged.dropna()
 
-    merged = merged[
-        merged["net_profit"] != 0
-    ]
+    merged = merged[merged["net_profit"] != 0]
 
     if merged.empty:
         return np.nan, "Insufficient Data"
 
-    merged = merged.sort_values(
-        "year_num"
-    ).tail(5)
+    merged = merged.sort_values("year_num").tail(5)
 
-    merged["cfo_pat_ratio"] = (
-        merged["cash_from_operations_cr"]
-        / merged["net_profit"]
-    )
+    merged["cfo_pat_ratio"] = merged["cash_from_operations_cr"] / merged["net_profit"]
 
-    score = merged[
-        "cfo_pat_ratio"
-    ].mean()
+    score = merged["cfo_pat_ratio"].mean()
 
     if pd.isna(score):
         return np.nan, "Insufficient Data"
@@ -374,6 +330,7 @@ def calculate_cfo_quality(
 # CAPEX INTENSITY
 # ============================================================
 
+
 def calculate_capex_intensity(
     company_id,
     cashflow,
@@ -386,13 +343,9 @@ def calculate_capex_intensity(
     Uses the latest annual year.
     """
 
-    cf = cashflow[
-        cashflow["company_id"] == company_id
-    ].copy()
+    cf = cashflow[cashflow["company_id"] == company_id].copy()
 
-    sales = pnl[
-        pnl["company_id"] == company_id
-    ].copy()
+    sales = pnl[pnl["company_id"] == company_id].copy()
 
     merged = pd.merge(
         cf[
@@ -416,17 +369,12 @@ def calculate_capex_intensity(
     if merged.empty:
         return np.nan, "Insufficient Data"
 
-    latest = merged.sort_values(
-        "year_num"
-    ).iloc[-1]
+    latest = merged.sort_values("year_num").iloc[-1]
 
     if latest["sales"] == 0:
         return np.nan, "Insufficient Data"
 
-    intensity = (
-        abs(latest["investing_activity"])
-        / abs(latest["sales"])
-    ) * 100
+    intensity = (abs(latest["investing_activity"]) / abs(latest["sales"])) * 100
 
     if intensity < 3:
         label = "Asset Light"
@@ -444,6 +392,7 @@ def calculate_capex_intensity(
 # FCF CONVERSION
 # ============================================================
 
+
 def calculate_fcf_conversion(
     company_id,
     ratios,
@@ -456,18 +405,14 @@ def calculate_fcf_conversion(
     Uses latest annual FCF and PAT.
     """
 
-    fcf = ratios[
-        ratios["company_id"] == company_id
-    ][
+    fcf = ratios[ratios["company_id"] == company_id][
         [
             "year_num",
             "free_cash_flow_cr",
         ]
     ]
 
-    pat = pnl[
-        pnl["company_id"] == company_id
-    ][
+    pat = pnl[pnl["company_id"] == company_id][
         [
             "year_num",
             "net_profit",
@@ -484,22 +429,18 @@ def calculate_fcf_conversion(
     if merged.empty:
         return np.nan
 
-    latest = merged.sort_values(
-        "year_num"
-    ).iloc[-1]
+    latest = merged.sort_values("year_num").iloc[-1]
 
     if latest["net_profit"] == 0:
         return np.nan
 
-    return (
-        latest["free_cash_flow_cr"]
-        / latest["net_profit"]
-    ) * 100
+    return (latest["free_cash_flow_cr"] / latest["net_profit"]) * 100
 
 
 # ============================================================
 # DISTRESS SIGNAL
 # ============================================================
+
 
 def calculate_distress(
     company_id,
@@ -516,31 +457,18 @@ def calculate_distress(
     Uses latest annual cash-flow year.
     """
 
-    cf = cashflow[
-        cashflow["company_id"] == company_id
-    ].copy()
+    cf = cashflow[cashflow["company_id"] == company_id].copy()
 
     if cf.empty:
         return False, None
 
-    latest = cf.sort_values(
-        "year_num"
-    ).iloc[-1]
+    latest = cf.sort_values("year_num").iloc[-1]
 
-    cfo = latest[
-        "operating_activity"
-    ]
+    cfo = latest["operating_activity"]
 
-    cff = latest[
-        "financing_activity"
-    ]
+    cff = latest["financing_activity"]
 
-    flag = (
-        pd.notna(cfo)
-        and pd.notna(cff)
-        and cfo < 0
-        and cff > 0
-    )
+    flag = pd.notna(cfo) and pd.notna(cff) and cfo < 0 and cff > 0
 
     return bool(flag), latest
 
@@ -548,6 +476,7 @@ def calculate_distress(
 # ============================================================
 # DELEVERAGING
 # ============================================================
+
 
 def calculate_deleveraging(
     company_id,
@@ -564,13 +493,9 @@ def calculate_deleveraging(
     Uses the latest annual year.
     """
 
-    cf = cashflow[
-        cashflow["company_id"] == company_id
-    ].copy()
+    cf = cashflow[cashflow["company_id"] == company_id].copy()
 
-    bs = balance[
-        balance["company_id"] == company_id
-    ].copy()
+    bs = balance[balance["company_id"] == company_id].copy()
 
     merged = pd.merge(
         cf[
@@ -592,23 +517,21 @@ def calculate_deleveraging(
     if len(merged) < 2:
         return False
 
-    merged = merged.sort_values(
-        "year_num"
-    )
+    merged = merged.sort_values("year_num")
 
     latest = merged.iloc[-1]
     previous = merged.iloc[-2]
 
     return bool(
         latest["financing_activity"] < 0
-        and latest["borrowings"]
-        < previous["borrowings"]
+        and latest["borrowings"] < previous["borrowings"]
     )
 
 
 # ============================================================
 # CAPITAL ALLOCATION
 # ============================================================
+
 
 def calculate_capital_allocation(
     company_id,
@@ -630,24 +553,16 @@ def calculate_capital_allocation(
     financing/investing cash-flow signals.
     """
 
-    cf = cashflow[
-        cashflow["company_id"] == company_id
-    ].copy()
+    cf = cashflow[cashflow["company_id"] == company_id].copy()
 
     if cf.empty:
         return "Insufficient Data"
 
-    latest = cf.sort_values(
-        "year_num"
-    ).iloc[-1]
+    latest = cf.sort_values("year_num").iloc[-1]
 
-    cff = latest[
-        "financing_activity"
-    ]
+    cff = latest["financing_activity"]
 
-    investing = latest[
-        "investing_activity"
-    ]
+    investing = latest["investing_activity"]
 
     deleveraging = calculate_deleveraging(
         company_id,
@@ -661,22 +576,13 @@ def calculate_capital_allocation(
     # Positive financing activity means capital is being
     # raised. Negative financing activity means capital
     # is being returned/repaid.
-    if (
-        pd.notna(cff)
-        and cff < 0
-    ):
+    if pd.notna(cff) and cff < 0:
         return "Shareholder Returns / Debt Repayment"
 
-    if (
-        pd.notna(investing)
-        and investing < 0
-    ):
+    if pd.notna(investing) and investing < 0:
         return "Growth Investment"
 
-    if (
-        pd.notna(cff)
-        and cff > 0
-    ):
+    if pd.notna(cff) and cff > 0:
         return "External Financing"
 
     return "Balanced"
@@ -686,7 +592,9 @@ def calculate_capital_allocation(
 # MAIN
 # ============================================================
 
+
 def generate():
+    "Generate."
 
     print("=" * 75)
     print("DAY 31 - CASH FLOW INTELLIGENCE")
@@ -701,58 +609,35 @@ def generate():
         balance,
     ) = load_data()
 
-    print(
-        f"Companies loaded : {len(companies)}"
-    )
+    print(f"Companies loaded : {len(companies)}")
 
     # --------------------------------------------------------
     # Prepare data
     # --------------------------------------------------------
 
-    cashflow = prepare_year_column(
-        cashflow
-    )
+    cashflow = prepare_year_column(cashflow)
 
-    ratios = prepare_year_column(
-        ratios
-    )
+    ratios = prepare_year_column(ratios)
 
-    pnl = prepare_year_column(
-        pnl
-    )
+    pnl = prepare_year_column(pnl)
 
-    balance = prepare_year_column(
-        balance
-    )
+    balance = prepare_year_column(balance)
 
-    cashflow = deduplicate_years(
-        cashflow
-    )
+    cashflow = deduplicate_years(cashflow)
 
-    ratios = deduplicate_years(
-        ratios
-    )
+    ratios = deduplicate_years(ratios)
 
-    pnl = deduplicate_years(
-        pnl
-    )
+    pnl = deduplicate_years(pnl)
 
-    balance = deduplicate_years(
-        balance
-    )
+    balance = deduplicate_years(balance)
 
     # --------------------------------------------------------
     # Sector lookup
     # --------------------------------------------------------
 
     sector_map = (
-        sectors
-        .drop_duplicates(
-            "company_id"
-        )
-        .set_index(
-            "company_id"
-        )["broad_sector"]
+        sectors.drop_duplicates("company_id")
+        .set_index("company_id")["broad_sector"]
         .to_dict()
     )
 
@@ -764,9 +649,7 @@ def generate():
 
     distress_rows = []
 
-    for company_id in companies[
-        "company_id"
-    ].astype(str):
+    for company_id in companies["company_id"].astype(str):
 
         sector = sector_map.get(
             company_id,
@@ -777,86 +660,69 @@ def generate():
         # CFO Quality
         # ------------------------------
 
-        cfo_quality_score, cfo_quality_label = (
-            calculate_cfo_quality(
-                company_id,
-                ratios,
-                pnl,
-            )
+        cfo_quality_score, cfo_quality_label = calculate_cfo_quality(
+            company_id,
+            ratios,
+            pnl,
         )
 
         # ------------------------------
         # CapEx Intensity
         # ------------------------------
 
-        capex_intensity, capex_label = (
-            calculate_capex_intensity(
-                company_id,
-                cashflow,
-                pnl,
-            )
+        capex_intensity, capex_label = calculate_capex_intensity(
+            company_id,
+            cashflow,
+            pnl,
         )
 
         # ------------------------------
         # FCF CAGR
         # ------------------------------
 
-        company_fcf = ratios[
-            ratios["company_id"]
-            == company_id
-        ].copy()
+        company_fcf = ratios[ratios["company_id"] == company_id].copy()
 
-        fcf_cagr = get_fcf_cagr_5yr(
-            company_fcf
-        )
+        fcf_cagr = get_fcf_cagr_5yr(company_fcf)
 
         # ------------------------------
         # FCF Conversion
         # ------------------------------
 
-        fcf_conversion = (
-            calculate_fcf_conversion(
-                company_id,
-                ratios,
-                pnl,
-            )
+        fcf_conversion = calculate_fcf_conversion(
+            company_id,
+            ratios,
+            pnl,
         )
 
         # ------------------------------
         # Distress
         # ------------------------------
 
-        distress_flag, latest_cf = (
-            calculate_distress(
-                company_id,
-                cashflow,
-                pnl,
-            )
+        distress_flag, latest_cf = calculate_distress(
+            company_id,
+            cashflow,
+            pnl,
         )
 
         # ------------------------------
         # Deleveraging
         # ------------------------------
 
-        deleveraging_flag = (
-            calculate_deleveraging(
-                company_id,
-                cashflow,
-                balance,
-            )
+        deleveraging_flag = calculate_deleveraging(
+            company_id,
+            cashflow,
+            balance,
         )
 
         # ------------------------------
         # Capital Allocation
         # ------------------------------
 
-        capital_allocation = (
-            calculate_capital_allocation(
-                company_id,
-                cashflow,
-                balance,
-                pnl,
-            )
+        capital_allocation = calculate_capital_allocation(
+            company_id,
+            cashflow,
+            balance,
+            pnl,
         )
 
         rows.append(
@@ -868,22 +734,16 @@ def generate():
                         cfo_quality_score,
                         4,
                     )
-                    if pd.notna(
-                        cfo_quality_score
-                    )
+                    if pd.notna(cfo_quality_score)
                     else np.nan
                 ),
-                "cfo_quality_label": (
-                    cfo_quality_label
-                ),
+                "cfo_quality_label": (cfo_quality_label),
                 "capex_intensity_pct": (
                     round(
                         capex_intensity,
                         4,
                     )
-                    if pd.notna(
-                        capex_intensity
-                    )
+                    if pd.notna(capex_intensity)
                     else np.nan
                 ),
                 "capex_label": capex_label,
@@ -900,20 +760,12 @@ def generate():
                         fcf_conversion,
                         4,
                     )
-                    if pd.notna(
-                        fcf_conversion
-                    )
+                    if pd.notna(fcf_conversion)
                     else np.nan
                 ),
-                "distress_flag": (
-                    distress_flag
-                ),
-                "deleveraging_flag": (
-                    deleveraging_flag
-                ),
-                "capital_allocation_label": (
-                    capital_allocation
-                ),
+                "distress_flag": (distress_flag),
+                "deleveraging_flag": (deleveraging_flag),
+                "capital_allocation_label": (capital_allocation),
             }
         )
 
@@ -921,40 +773,23 @@ def generate():
         # Distress alert
         # ------------------------------
 
-        if (
-            distress_flag
-            and latest_cf is not None
-        ):
+        if distress_flag and latest_cf is not None:
 
-            year = latest_cf[
-                "year_num"
-            ]
+            year = latest_cf["year_num"]
 
-            cfo = latest_cf[
-                "operating_activity"
-            ]
+            cfo = latest_cf["operating_activity"]
 
-            cff = latest_cf[
-                "financing_activity"
-            ]
+            cff = latest_cf["financing_activity"]
 
             # Find PAT for same/latest year.
-            company_pnl = pnl[
-                pnl["company_id"]
-                == company_id
-            ]
+            company_pnl = pnl[pnl["company_id"] == company_id]
 
-            company_pnl = company_pnl[
-                company_pnl["year_num"]
-                == year
-            ]
+            company_pnl = company_pnl[company_pnl["year_num"] == year]
 
             if company_pnl.empty:
                 latest_pat = np.nan
             else:
-                latest_pat = company_pnl.iloc[0][
-                    "net_profit"
-                ]
+                latest_pat = company_pnl.iloc[0]["net_profit"]
 
             distress_rows.append(
                 {
@@ -1026,83 +861,43 @@ def generate():
     print("DAY 31 VERIFICATION")
     print("=" * 75)
 
-    print(
-        f"Companies expected : {len(companies)}"
-    )
+    print(f"Companies expected : {len(companies)}")
 
-    print(
-        f"Companies output   : {len(intelligence)}"
-    )
+    print(f"Companies output   : {len(intelligence)}")
 
-    print(
-        f"Distress alerts    : {len(alerts)}"
-    )
+    print(f"Distress alerts    : {len(alerts)}")
 
-    print(
-        "CFO quality labels:"
-    )
+    print("CFO quality labels:")
 
-    print(
-        intelligence[
-            "cfo_quality_label"
-        ].value_counts(
-            dropna=False
-        ).to_string()
-    )
+    print(intelligence["cfo_quality_label"].value_counts(dropna=False).to_string())
 
     print()
-    print(
-        "CapEx labels:"
-    )
+    print("CapEx labels:")
 
-    print(
-        intelligence[
-            "capex_label"
-        ].value_counts(
-            dropna=False
-        ).to_string()
-    )
+    print(intelligence["capex_label"].value_counts(dropna=False).to_string())
 
     print()
     print(
         "Distress flags:",
-        int(
-            intelligence[
-                "distress_flag"
-            ].sum()
-        ),
+        int(intelligence["distress_flag"].sum()),
     )
 
     print(
         "Deleveraging flags:",
-        int(
-            intelligence[
-                "deleveraging_flag"
-            ].sum()
-        ),
+        int(intelligence["deleveraging_flag"].sum()),
     )
 
     print()
-    print(
-        "Capital allocation:"
-    )
+    print("Capital allocation:")
 
     print(
-        intelligence[
-            "capital_allocation_label"
-        ].value_counts(
-            dropna=False
-        ).to_string()
+        intelligence["capital_allocation_label"].value_counts(dropna=False).to_string()
     )
 
     print()
-    print(
-        f"Excel output : {OUTPUT_XLSX}"
-    )
+    print(f"Excel output : {OUTPUT_XLSX}")
 
-    print(
-        f"Alerts output: {OUTPUT_ALERTS}"
-    )
+    print(f"Alerts output: {OUTPUT_ALERTS}")
 
     # --------------------------------------------------------
     # Missing-data report
@@ -1111,44 +906,26 @@ def generate():
     print()
     print(
         "Missing CFO quality:",
-        int(
-            intelligence[
-                "cfo_quality_score"
-            ].isna().sum()
-        ),
+        int(intelligence["cfo_quality_score"].isna().sum()),
     )
 
     print(
         "Missing CapEx intensity:",
-        int(
-            intelligence[
-                "capex_intensity_pct"
-            ].isna().sum()
-        ),
+        int(intelligence["capex_intensity_pct"].isna().sum()),
     )
 
     print(
         "Missing FCF CAGR:",
-        int(
-            intelligence[
-                "fcf_cagr_5yr"
-            ].isna().sum()
-        ),
+        int(intelligence["fcf_cagr_5yr"].isna().sum()),
     )
 
     print(
         "Missing FCF conversion:",
-        int(
-            intelligence[
-                "fcf_conversion_pct"
-            ].isna().sum()
-        ),
+        int(intelligence["fcf_conversion_pct"].isna().sum()),
     )
 
     print()
-    print(
-        "STATUS: Day 31 cash-flow intelligence generated."
-    )
+    print("STATUS: Day 31 cash-flow intelligence generated.")
 
 
 # ============================================================

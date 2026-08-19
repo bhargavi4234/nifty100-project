@@ -1,6 +1,7 @@
-import sqlite3
-import pandas as pd
 import os
+import sqlite3
+
+import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "data", "db", "nifty100.db")
@@ -53,9 +54,7 @@ print(coverage)
 
 print("\n3. Companies with Less Than 5 Years of Data\n")
 
-less_than_five = coverage[
-    coverage["years_available"] < 5
-]
+less_than_five = coverage[coverage["years_available"] < 5]
 
 print(less_than_five)
 

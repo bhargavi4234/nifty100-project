@@ -3,11 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
-
 # Required regex from the Sprint 5 specification
-PATTERN = re.compile(
-    r"(\d+)\s*Years?:?\s*([\d.]+)%"
-)
+PATTERN = re.compile(r"(\d+)\s*Years?:?\s*([\d.]+)%")
 
 
 TARGET_FIELDS = [
@@ -62,15 +59,11 @@ def parse_analysis(input_file, output_file, failure_file):
     ]
 
     missing_columns = [
-        column
-        for column in required_columns
-        if column not in df.columns
+        column for column in required_columns if column not in df.columns
     ]
 
     if missing_columns:
-        raise ValueError(
-            f"Missing required columns: {missing_columns}"
-        )
+        raise ValueError(f"Missing required columns: {missing_columns}")
 
     parsed_rows = []
     failures = []
@@ -172,11 +165,7 @@ def parse_analysis(input_file, output_file, failure_file):
     print("\nMetric breakdown:")
 
     if not parsed_df.empty:
-        print(
-            parsed_df["metric_type"]
-            .value_counts()
-            .to_string()
-        )
+        print(parsed_df["metric_type"].value_counts().to_string())
 
     print("\nOutput files:")
     print(f"Parsed   : {output_file}")
@@ -187,24 +176,11 @@ if __name__ == "__main__":
 
     project_root = Path(__file__).resolve().parents[2]
 
-    input_file = (
-        project_root
-        / "data"
-        / "raw"
-        / "analysis.xlsx"
-    )
+    input_file = project_root / "data" / "raw" / "analysis.xlsx"
 
-    output_file = (
-        project_root
-        / "output"
-        / "analysis_parsed.csv"
-    )
+    output_file = project_root / "output" / "analysis_parsed.csv"
 
-    failure_file = (
-        project_root
-        / "output"
-        / "parse_failures.csv"
-    )
+    failure_file = project_root / "output" / "parse_failures.csv"
 
     parse_analysis(
         input_file=input_file,

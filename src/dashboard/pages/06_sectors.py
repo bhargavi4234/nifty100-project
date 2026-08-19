@@ -4,7 +4,6 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-
 # ============================================================
 # PAGE TITLE
 # ============================================================
@@ -26,6 +25,7 @@ DB_PATH = "data/db/nifty100.db"
 
 @st.cache_data(ttl=600)
 def load_sector_data():
+    "Load sector data."
 
     conn = sqlite3.connect(DB_PATH)
 
@@ -61,10 +61,7 @@ def load_sector_data():
         AND SUBSTR(fr.year, -4) = CAST(mc.year AS TEXT)
     """
 
-    df = pd.read_sql_query(
-        query,
-        conn
-    )
+    df = pd.read_sql_query(query, conn)
 
     conn.close()
 
@@ -80,9 +77,7 @@ df = load_sector_data()
 
 if df.empty:
 
-    st.warning(
-        "No sector data available."
-    )
+    st.warning("No sector data available.")
 
     st.stop()
 
@@ -91,16 +86,9 @@ if df.empty:
 # CLEAN YEAR
 # ============================================================
 
-df["year_number"] = (
-    df["year"]
-    .astype(str)
-    .str.extract(r"(\d{4})")[0]
-)
+df["year_number"] = df["year"].astype(str).str.extract(r"(\d{4})")[0]
 
-df["year_number"] = pd.to_numeric(
-    df["year_number"],
-    errors="coerce"
-)
+df["year_number"] = pd.to_numeric(df["year_number"], errors="coerce")
 
 
 # ============================================================
@@ -108,14 +96,8 @@ df["year_number"] = pd.to_numeric(
 # ============================================================
 
 df = (
-    df
-    .sort_values(
-        ["company_id", "year_number"]
-    )
-    .drop_duplicates(
-        subset=["company_id"],
-        keep="last"
-    )
+    df.sort_values(["company_id", "year_number"])
+    .drop_duplicates(subset=["company_id"], keep="last")
     .reset_index(drop=True)
 )
 
@@ -124,20 +106,11 @@ df = (
 # REMOVE INVALID ROWS
 # ============================================================
 
-df["sales"] = pd.to_numeric(
-    df["sales"],
-    errors="coerce"
-)
+df["sales"] = pd.to_numeric(df["sales"], errors="coerce")
 
-df["return_on_equity_pct"] = pd.to_numeric(
-    df["return_on_equity_pct"],
-    errors="coerce"
-)
+df["return_on_equity_pct"] = pd.to_numeric(df["return_on_equity_pct"], errors="coerce")
 
-df["market_cap_crore"] = pd.to_numeric(
-    df["market_cap_crore"],
-    errors="coerce"
-)
+df["market_cap_crore"] = pd.to_numeric(df["market_cap_crore"], errors="coerce")
 
 
 # ============================================================
@@ -146,33 +119,21 @@ df["market_cap_crore"] = pd.to_numeric(
 
 st.sidebar.header("Sector")
 
-sector_options = sorted(
-    df["broad_sector"]
-    .dropna()
-    .unique()
-    .tolist()
-)
+sector_options = sorted(df["broad_sector"].dropna().unique().tolist())
 
-selected_sector = st.sidebar.selectbox(
-    "Select Sector",
-    sector_options
-)
+selected_sector = st.sidebar.selectbox("Select Sector", sector_options)
 
 
 # ============================================================
 # FILTER SELECTED SECTOR
 # ============================================================
 
-sector_df = df[
-    df["broad_sector"] == selected_sector
-].copy()
+sector_df = df[df["broad_sector"] == selected_sector].copy()
 
 
 if sector_df.empty:
 
-    st.warning(
-        "No companies found for this sector."
-    )
+    st.warning("No companies found for this sector.")
 
     st.stop()
 
@@ -181,13 +142,9 @@ if sector_df.empty:
 # SECTOR HEADER
 # ============================================================
 
-st.subheader(
-    f"{selected_sector} — Company Analysis"
-)
+st.subheader(f"{selected_sector} — Company Analysis")
 
-st.caption(
-    f"{len(sector_df)} companies in this sector"
-)
+st.caption(f"{len(sector_df)} companies in this sector")
 
 
 # ============================================================
@@ -196,32 +153,21 @@ st.caption(
 
 st.markdown("---")
 
-st.subheader(
-    "📊 Revenue vs ROE — Market Cap"
-)
+st.subheader("📊 Revenue vs ROE — Market Cap")
 
 
 bubble_df = sector_df.dropna(
-    subset=[
-        "sales",
-        "return_on_equity_pct",
-        "market_cap_crore",
-        "sub_sector"
-    ]
+    subset=["sales", "return_on_equity_pct", "market_cap_crore", "sub_sector"]
 ).copy()
 
 # Cap extreme ROE values only for visualization.
 # Original database values are not modified.
-bubble_df["roe_display"] = bubble_df[
-    "return_on_equity_pct"
-].clip(lower=-100, upper=100)
+bubble_df["roe_display"] = bubble_df["return_on_equity_pct"].clip(lower=-100, upper=100)
 
 
 if bubble_df.empty:
 
-    st.info(
-        "Not enough data available to create the bubble chart."
-    )
+    st.info("Not enough data available to create the bubble chart.")
 
 else:
 
@@ -237,28 +183,21 @@ else:
             "sales": ":,.0f",
             "roe_display": ":.2f",
             "market_cap_crore": ":,.0f",
-            "sub_sector": True
+            "sub_sector": True,
         },
         labels={
             "sales": "Revenue / Sales (₹ Cr)",
             "roe_display": "ROE (%)",
             "market_cap_crore": "Market Cap (₹ Cr)",
-            "sub_sector": "Sub-sector"
+            "sub_sector": "Sub-sector",
         },
-        title=(
-            f"{selected_sector}: Revenue vs ROE"
-        ),
-        size_max=60
+        title=(f"{selected_sector}: Revenue vs ROE"),
+        size_max=60,
     )
 
-    fig.update_layout(
-        height=650
-    )
+    fig.update_layout(height=650)
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # ============================================================
@@ -267,15 +206,13 @@ else:
 
 st.markdown("---")
 
-st.subheader(
-    "📈 Sector Median KPIs"
-)
+st.subheader("📈 Sector Median KPIs")
 
 
 median_columns = {
     "Revenue / Sales": "sales",
     "ROE": "return_on_equity_pct",
-    "Market Cap": "market_cap_crore"
+    "Market Cap": "market_cap_crore",
 }
 
 
@@ -283,20 +220,11 @@ median_values = {}
 
 for label, column in median_columns.items():
 
-    median_values[label] = sector_df[
-        column
-    ].median()
+    median_values[label] = sector_df[column].median()
 
 
 median_df = pd.DataFrame(
-    {
-        "KPI": list(
-            median_values.keys()
-        ),
-        "Median": list(
-            median_values.values()
-        )
-    }
+    {"KPI": list(median_values.keys()), "Median": list(median_values.values())}
 )
 
 
@@ -309,26 +237,14 @@ fig_median = px.bar(
     x="KPI",
     y="Median",
     text="Median",
-    title=(
-        f"{selected_sector}: Median KPIs"
-    )
+    title=(f"{selected_sector}: Median KPIs"),
 )
 
-fig_median.update_traces(
-    texttemplate="%{text:.2f}",
-    textposition="outside"
-)
+fig_median.update_traces(texttemplate="%{text:.2f}", textposition="outside")
 
-fig_median.update_layout(
-    height=450,
-    yaxis_title="Median Value",
-    xaxis_title=""
-)
+fig_median.update_layout(height=450, yaxis_title="Median Value", xaxis_title="")
 
-st.plotly_chart(
-    fig_median,
-    use_container_width=True
-)
+st.plotly_chart(fig_median, use_container_width=True)
 
 
 # ============================================================
@@ -337,9 +253,7 @@ st.plotly_chart(
 
 st.markdown("---")
 
-st.subheader(
-    "Companies in Selected Sector"
-)
+st.subheader("Companies in Selected Sector")
 
 
 table_df = sector_df[
@@ -349,7 +263,7 @@ table_df = sector_df[
         "sub_sector",
         "sales",
         "return_on_equity_pct",
-        "market_cap_crore"
+        "market_cap_crore",
     ]
 ].copy()
 
@@ -361,13 +275,9 @@ table_df = table_df.rename(
         "sub_sector": "Sub-sector",
         "sales": "Revenue / Sales",
         "return_on_equity_pct": "ROE %",
-        "market_cap_crore": "Market Cap (₹ Cr)"
+        "market_cap_crore": "Market Cap (₹ Cr)",
     }
 )
 
 
-st.dataframe(
-    table_df,
-    use_container_width=True,
-    hide_index=True
-)
+st.dataframe(table_df, use_container_width=True, hide_index=True)

@@ -8,25 +8,22 @@ DAY 34 - BATCH REPORT GENERATION
 5. Generate verification summaries.
 """
 
-from pathlib import Path
 import sqlite3
+from pathlib import Path
 
 import pandas as pd
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import (
-    SimpleDocTemplate,
     Paragraph,
+    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
-    PageBreak,
 )
-
 from tearsheet import generate_tearsheet
-
 
 # ============================================================
 # PATHS
@@ -49,7 +46,9 @@ SECTOR_SUMMARY_FILE = OUTPUT_DIR / "sector_report_summary.csv"
 # DATABASE
 # ============================================================
 
+
 def get_connection():
+    "Get connection."
     return sqlite3.connect(DB_PATH)
 
 
@@ -57,7 +56,9 @@ def get_connection():
 # COMPANY LIST
 # ============================================================
 
+
 def get_companies():
+    "Get companies."
 
     con = get_connection()
 
@@ -81,7 +82,9 @@ def get_companies():
 # YEAR EXTRACTION
 # ============================================================
 
+
 def extract_year(value):
+    "Extract year."
 
     if pd.isna(value):
         return None
@@ -102,7 +105,9 @@ def extract_year(value):
 # DATA YEARS
 # ============================================================
 
+
 def get_company_year_count(company_id):
+    "Get company year count."
 
     con = get_connection()
 
@@ -135,7 +140,7 @@ def get_company_year_count(company_id):
                 if parsed is not None:
                     counts.append(parsed)
 
-        except Exception:
+        except (TypeError, ValueError):
             pass
 
     con.close()
@@ -147,7 +152,9 @@ def get_company_year_count(company_id):
 # BATCH TEARSHEETS
 # ============================================================
 
+
 def generate_company_tearsheets():
+    "Generate company tearsheets."
 
     print("=" * 78)
     print("DAY 34 - BATCH TEARSHEET GENERATION")
@@ -176,9 +183,7 @@ def generate_company_tearsheets():
 
         ticker = row["company_id"]
 
-        year_count = get_company_year_count(
-            ticker
-        )
+        year_count = get_company_year_count(ticker)
 
         if year_count < 3:
 
@@ -190,17 +195,11 @@ def generate_company_tearsheets():
                 }
             )
 
-            print(
-                f"SKIP  {ticker:<12} "
-                f"{year_count} years"
-            )
+            print(f"SKIP  {ticker:<12} " f"{year_count} years")
 
             continue
 
-        output_path = (
-            TEARSHEET_DIR
-            / f"{ticker}_tearsheet.pdf"
-        )
+        output_path = TEARSHEET_DIR / f"{ticker}_tearsheet.pdf"
 
         try:
 
@@ -217,12 +216,9 @@ def generate_company_tearsheets():
                 }
             )
 
-            print(
-                f"PASS  {ticker:<12} "
-                f"{year_count} years"
-            )
+            print(f"PASS  {ticker:<12} " f"{year_count} years")
 
-        except Exception as exc:
+        except (KeyError, TypeError, ValueError, OSError) as exc:
 
             failed.append(
                 {
@@ -231,10 +227,7 @@ def generate_company_tearsheets():
                 }
             )
 
-            print(
-                f"FAIL  {ticker:<12} "
-                f"{exc}"
-            )
+            print(f"FAIL  {ticker:<12} " f"{exc}")
 
     skipped_df = pd.DataFrame(
         skipped,
@@ -291,10 +284,7 @@ def generate_company_tearsheets():
         print("FAILED COMPANIES:")
 
         for item in failed:
-            print(
-                f" - {item['company_id']}: "
-                f"{item['error']}"
-            )
+            print(f" - {item['company_id']}: " f"{item['error']}")
 
     return companies, generated, skipped, failed
 
@@ -303,7 +293,9 @@ def generate_company_tearsheets():
 # SECTOR DATA
 # ============================================================
 
+
 def get_sector_data():
+    "Get sector data."
 
     con = get_connection()
 
@@ -330,7 +322,9 @@ def get_sector_data():
 # LATEST FINANCIAL DATA
 # ============================================================
 
+
 def get_latest_metrics(company_id):
+    "Get latest metrics."
 
     con = get_connection()
 
@@ -370,30 +364,14 @@ def get_latest_metrics(company_id):
     row = ratio.iloc[0]
 
     return {
-        "ROE": row.get(
-            "return_on_equity_pct"
-        ),
-        "ROCE": row.get(
-            "return_on_capital_employed_pct"
-        ),
-        "OPM": row.get(
-            "operating_profit_margin_pct"
-        ),
-        "D/E": row.get(
-            "debt_to_equity"
-        ),
-        "ICR": row.get(
-            "interest_coverage"
-        ),
-        "FCF": row.get(
-            "free_cash_flow_cr"
-        ),
-        "Revenue CAGR": row.get(
-            "revenue_cagr_5yr"
-        ),
-        "PAT CAGR": row.get(
-            "pat_cagr_5yr"
-        ),
+        "ROE": row.get("return_on_equity_pct"),
+        "ROCE": row.get("return_on_capital_employed_pct"),
+        "OPM": row.get("operating_profit_margin_pct"),
+        "D/E": row.get("debt_to_equity"),
+        "ICR": row.get("interest_coverage"),
+        "FCF": row.get("free_cash_flow_cr"),
+        "Revenue CAGR": row.get("revenue_cagr_5yr"),
+        "PAT CAGR": row.get("pat_cagr_5yr"),
     }
 
 
@@ -401,7 +379,9 @@ def get_latest_metrics(company_id):
 # FORMAT METRIC
 # ============================================================
 
+
 def format_metric(value):
+    "Format metric."
 
     if value is None:
         return "N/A"
@@ -413,7 +393,7 @@ def format_metric(value):
 
         return f"{float(value):.2f}"
 
-    except Exception:
+    except (TypeError, ValueError):
 
         return "N/A"
 
@@ -422,27 +402,21 @@ def format_metric(value):
 # SECTOR REPORT
 # ============================================================
 
+
 def generate_sector_report(
     sector,
     sector_df,
 ):
+    "Generate sector report."
 
     SECTOR_DIR.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    safe_sector = (
-        str(sector)
-        .replace("/", "_")
-        .replace("\\", "_")
-        .replace(" ", "_")
-    )
+    safe_sector = str(sector).replace("/", "_").replace("\\", "_").replace(" ", "_")
 
-    output_path = (
-        SECTOR_DIR
-        / f"{safe_sector}_report.pdf"
-    )
+    output_path = SECTOR_DIR / f"{safe_sector}_report.pdf"
 
     styles = getSampleStyleSheet()
 
@@ -490,19 +464,13 @@ def generate_sector_report(
         )
     )
 
-    story.append(
-        Spacer(1, 12)
-    )
-
-    metric_rows = []
+    story.append(Spacer(1, 12))
 
     all_metrics = []
 
     for _, company in sector_df.iterrows():
 
-        metrics = get_latest_metrics(
-            company["company_id"]
-        )
+        metrics = get_latest_metrics(company["company_id"])
 
         all_metrics.append(metrics)
 
@@ -543,18 +511,11 @@ def generate_sector_report(
                 try:
 
                     if not pd.isna(value):
-                        values.append(
-                            float(value)
-                        )
-
-                except Exception:
+                        values.append(float(value))
+                except (TypeError, ValueError):
                     pass
 
-        median = (
-            pd.Series(values).median()
-            if values
-            else None
-        )
+        median = pd.Series(values).median() if values else None
 
         summary_rows.append(
             [
@@ -584,9 +545,7 @@ def generate_sector_report(
                     "BACKGROUND",
                     (0, 0),
                     (-1, 0),
-                    colors.HexColor(
-                        "#17365D"
-                    ),
+                    colors.HexColor("#17365D"),
                 ),
                 (
                     "TEXTCOLOR",
@@ -644,9 +603,7 @@ def generate_sector_report(
 
     story.append(summary_table)
 
-    story.append(
-        Spacer(1, 15)
-    )
+    story.append(Spacer(1, 15))
 
     # --------------------------------------------------------
     # COMPANY LIST
@@ -675,9 +632,7 @@ def generate_sector_report(
 
     for _, company in sector_df.iterrows():
 
-        metrics = get_latest_metrics(
-            company["company_id"]
-        )
+        metrics = get_latest_metrics(company["company_id"])
 
         company_rows.append(
             [
@@ -710,15 +665,11 @@ def generate_sector_report(
                     body_style,
                 ),
                 Paragraph(
-                    format_metric(
-                        metrics["Revenue CAGR"]
-                    ),
+                    format_metric(metrics["Revenue CAGR"]),
                     body_style,
                 ),
                 Paragraph(
-                    format_metric(
-                        metrics["PAT CAGR"]
-                    ),
+                    format_metric(metrics["PAT CAGR"]),
                     body_style,
                 ),
             ]
@@ -736,7 +687,7 @@ def generate_sector_report(
             55,
             60,
             60,
-            ],
+        ],
         repeatRows=1,
     )
 
@@ -747,9 +698,7 @@ def generate_sector_report(
                     "BACKGROUND",
                     (0, 0),
                     (-1, 0),
-                    colors.HexColor(
-                        "#17365D"
-                    ),
+                    colors.HexColor("#17365D"),
                 ),
                 (
                     "TEXTCOLOR",
@@ -809,7 +758,9 @@ def generate_sector_report(
 # GENERATE ALL SECTOR REPORTS
 # ============================================================
 
+
 def generate_sector_reports():
+    "Generate sector reports."
 
     print()
     print("=" * 78)
@@ -818,16 +769,11 @@ def generate_sector_reports():
 
     sectors = get_sector_data()
 
-    sectors["sector"] = (
-        sectors["sector"]
-        .fillna("Unknown")
-    )
+    sectors["sector"] = sectors["sector"].fillna("Unknown")
 
     results = []
 
-    for sector, sector_df in sectors.groupby(
-        "sector"
-    ):
+    for sector, sector_df in sectors.groupby("sector"):
 
         try:
 
@@ -839,37 +785,27 @@ def generate_sector_reports():
             results.append(
                 {
                     "sector": sector,
-                    "company_count": len(
-                        sector_df
-                    ),
+                    "company_count": len(sector_df),
                     "status": "PASS",
                     "file": str(output),
                 }
             )
 
-            print(
-                f"PASS  {sector:<20} "
-                f"{len(sector_df)} companies"
-            )
+            print(f"PASS  {sector:<20} " f"{len(sector_df)} companies")
 
-        except Exception as exc:
+        except (KeyError, TypeError, ValueError, OSError) as exc:
 
             results.append(
                 {
                     "sector": sector,
-                    "company_count": len(
-                        sector_df
-                    ),
+                    "company_count": len(sector_df),
                     "status": "FAIL",
                     "file": "",
                     "error": str(exc),
                 }
             )
 
-            print(
-                f"FAIL  {sector:<20} "
-                f"{exc}"
-            )
+            print(f"FAIL  {sector:<20} " f"{exc}")
 
     result_df = pd.DataFrame(results)
 
@@ -881,12 +817,7 @@ def generate_sector_reports():
     print()
     print(
         "Sector PDFs generated:",
-        int(
-            (
-                result_df["status"]
-                == "PASS"
-            ).sum()
-        ),
+        int((result_df["status"] == "PASS").sum()),
     )
 
     print(
@@ -906,6 +837,7 @@ def generate_sector_reports():
 # FINAL VERIFICATION
 # ============================================================
 
+
 def verify_day_34(
     companies,
     generated,
@@ -913,23 +845,16 @@ def verify_day_34(
     failed,
     sector_results,
 ):
+    "Verify day 34."
 
     print()
     print("=" * 78)
     print("DAY 34 VERIFICATION")
     print("=" * 78)
 
-    actual_tearsheets = list(
-        TEARSHEET_DIR.glob(
-            "*_tearsheet.pdf"
-        )
-    )
+    actual_tearsheets = list(TEARSHEET_DIR.glob("*_tearsheet.pdf"))
 
-    actual_sector_reports = list(
-        SECTOR_DIR.glob(
-            "*_report.pdf"
-        )
-    )
+    actual_sector_reports = list(SECTOR_DIR.glob("*_report.pdf"))
 
     print(
         "Database companies:",
@@ -956,56 +881,36 @@ def verify_day_34(
         len(actual_sector_reports),
     )
 
-    expected_tearsheets = (
-        len(companies)
-        - len(skipped)
-    )
+    expected_tearsheets = len(companies) - len(skipped)
 
     print(
         "Expected tearsheets:",
         expected_tearsheets,
     )
 
-    if (
-        len(actual_tearsheets)
-        == expected_tearsheets
-        and len(failed) == 0
-    ):
-        print(
-            "TEARSHEET COUNT: PASS"
-        )
+    if len(actual_tearsheets) == expected_tearsheets and len(failed) == 0:
+        print("TEARSHEET COUNT: PASS")
     else:
-        print(
-            "TEARSHEET COUNT: REVIEW"
-        )
+        print("TEARSHEET COUNT: REVIEW")
 
-    if (
-        len(actual_sector_reports)
-        == 11
-    ):
-        print(
-            "SECTOR REPORT COUNT: PASS"
-        )
+    if len(actual_sector_reports) == 11:
+        print("SECTOR REPORT COUNT: PASS")
     else:
-        print(
-            "SECTOR REPORT COUNT: REVIEW"
-        )
+        print("SECTOR REPORT COUNT: REVIEW")
 
     if len(failed) == 0:
-        print(
-            "BATCH GENERATION: PASS"
-        )
+        print("BATCH GENERATION: PASS")
     else:
-        print(
-            "BATCH GENERATION: REVIEW"
-        )
+        print("BATCH GENERATION: REVIEW")
 
 
 # ============================================================
 # MAIN
 # ============================================================
 
+
 def main():
+    "Main."
 
     (
         companies,
@@ -1014,9 +919,7 @@ def main():
         failed,
     ) = generate_company_tearsheets()
 
-    sector_results = (
-        generate_sector_reports()
-    )
+    sector_results = generate_sector_reports()
 
     verify_day_34(
         companies,

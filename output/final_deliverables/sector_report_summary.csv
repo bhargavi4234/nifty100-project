@@ -1,0 +1,11 @@
+sector,company_count,status,file
+Communication Services,2,PASS,D:\nifty100_project\reports\sector\Communication_Services_report.pdf
+Consumer Discretionary,14,PASS,D:\nifty100_project\reports\sector\Consumer_Discretionary_report.pdf
+Consumer Staples,7,PASS,D:\nifty100_project\reports\sector\Consumer_Staples_report.pdf
+Energy,14,PASS,D:\nifty100_project\reports\sector\Energy_report.pdf
+Financials,23,PASS,D:\nifty100_project\reports\sector\Financials_report.pdf
+Healthcare,6,PASS,D:\nifty100_project\reports\sector\Healthcare_report.pdf
+Industrials,10,PASS,D:\nifty100_project\reports\sector\Industrials_report.pdf
+Information Technology,5,PASS,D:\nifty100_project\reports\sector\Information_Technology_report.pdf
+Materials,9,PASS,D:\nifty100_project\reports\sector\Materials_report.pdf
+Real Estate,2,PASS,D:\nifty100_project\reports\sector\Real_Estate_report.pdf
